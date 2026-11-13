@@ -26,3 +26,11 @@
 - Files: .gitignore, docs/personas-and-user-stories.md, docs/milestones.md and docs/development-log.md.
 - Validation: checked story IDs and priorities, whitespace, credential patterns and the ignore rule. Build and tests do not apply.
 - Recommended commit: `docs(discovery): draft personas and prioritized stories`.
+
+
+## 2026-11-13 — Milestone 1, Checkpoint 4 (PDF M00.4)
+
+- Drafted eight Albanian screen wireframes and four MVP workflows. Grouped related views to cover all nine PDF screen groups. Interview validation remains pending.
+- Files: docs/mvp-wireframes.md, docs/milestones.md and docs/development-log.md.
+- Validation: checked coverage against the specification, screen and workflow IDs, whitespace and credential patterns. Build and tests do not apply.
+- Recommended commit: `docs(discovery): sketch MVP screens and workflows`.
