@@ -102,3 +102,13 @@
 
   git add -- src/BanesaHub.Infrastructure/Persistence/Migrations docs/setup-guide.md docs/milestones.md docs/development-log.md
   git commit -m "feat(persistence): add initial EF Core baseline migration"
+
+## 2026-11-13 — Milestone 3, Identity persistence (PDF M02.1a)
+
+- The owner reported that the M01.6 clean database verification succeeded.
+- Registered ASP.NET Core Identity with GUID keys and EF Core stores. Required unique emails and configured the lockout policy. Sign-in enforcement will be added with the account endpoints.
+- Generated the SQL Server Identity schema migration. Build and three API smoke tests passed. EF reported no pending model changes. The Identity migration has yet to be applied to live SQL Server.
+- Commit commands from the repository root
+
+  git add -- src/BanesaHub.API/Program.cs src/BanesaHub.Infrastructure/BanesaHub.Infrastructure.csproj src/BanesaHub.Infrastructure/Persistence/BanesaHubDbContext.cs src/BanesaHub.Infrastructure/Persistence/Migrations docs/milestones.md docs/development-log.md
+  git commit -m "feat(auth): configure Identity persistence"
