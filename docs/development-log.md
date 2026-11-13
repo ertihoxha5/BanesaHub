@@ -17,3 +17,12 @@
 - Files: docs/discovery-interviews.md, docs/milestones.md and docs/development-log.md.
 - Validation: checked the guide against PDF M00 participant and acceptance targets. Build and tests do not apply to this documentation checkpoint.
 - Recommended commit: `docs(discovery): prepare property management interviews`.
+
+
+## 2026-11-13 — Milestone 1, Checkpoint 3 (PDF M00.3)
+
+- Drafted six personas and twelve prioritized stories with acceptance criteria from the specification. Interview validation remains open under M00.2.
+- Added a root Visual Studio cache ignore rule at the owner's request. The previously tracked .vs/slnx.sqlite requires separate removal from the Git index.
+- Files: .gitignore, docs/personas-and-user-stories.md, docs/milestones.md and docs/development-log.md.
+- Validation: checked story IDs and priorities, whitespace, credential patterns and the ignore rule. Build and tests do not apply.
+- Recommended commit: `docs(discovery): draft personas and prioritized stories`.
