@@ -73,3 +73,13 @@
 
   git add -- src/BanesaHub.API/Program.cs src/BanesaHub.API/BanesaHub.API.csproj docs/milestones.md docs/development-log.md
   git commit -m "feat(api): add health checks logging and OpenAPI"
+
+## 2026-11-13 — Milestone 1, Setup Checkpoint 4 (PDF M01.4)
+
+- Configured both xUnit projects. Added three API smoke cases for health and Development versus Production OpenAPI exposure. The unit test project has no cases yet.
+- Added a GitHub Actions workflow that restores, builds and tests on pull requests and pushes to main.
+- Local Release restore and build passed with zero build warnings or errors. All three smoke cases passed. The test runner reported the empty unit test assembly and used its default temporary directory. GitHub Actions has yet to run this workflow.
+- Commit commands from the repository root
+
+  git add -- .github/workflows/ci.yml src/BanesaHub.API/BanesaHub.API.csproj tests/BanesaHub.IntegrationTests/ApiSmokeTests.cs tests/BanesaHub.IntegrationTests/BanesaHub.IntegrationTests.csproj tests/BanesaHub.UnitTests/BanesaHub.UnitTests.csproj docs/milestones.md docs/development-log.md
+  git commit -m "test(api): add smoke tests and CI workflow"

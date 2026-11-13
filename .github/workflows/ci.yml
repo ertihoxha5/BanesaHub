@@ -1,0 +1,24 @@
+name: Build and test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+      - run: dotnet restore BanesaHub.sln
+      - run: dotnet build BanesaHub.sln --configuration Release --no-restore
+      - run: dotnet test BanesaHub.sln --configuration Release --no-build

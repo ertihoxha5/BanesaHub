@@ -13,4 +13,8 @@
     <ProjectReference Include="../BanesaHub.Application/BanesaHub.Application.csproj" />
     <ProjectReference Include="../BanesaHub.Infrastructure/BanesaHub.Infrastructure.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="BanesaHub.IntegrationTests" />
+  </ItemGroup>
 </Project>
