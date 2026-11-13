@@ -34,3 +34,11 @@
 - Files: docs/mvp-wireframes.md, docs/milestones.md and docs/development-log.md.
 - Validation: checked coverage against the specification, screen and workflow IDs, whitespace and credential patterns. Build and tests do not apply.
 - Recommended commit: `docs(discovery): sketch MVP screens and workflows`.
+
+
+## 2026-11-13 — Milestone 1, Checkpoint 5 (PDF M00.5)
+
+- Consolidated the draft PRD, prioritized delivery backlog and definition of done. Linked the personas and wireframes.
+- Discovery remains open pending M00.2 interview evidence and review. M01 stays unstarted. The tool recheck found .NET SDK 9.0.306 and Visual Studio 2022 17.14.
+- Validation checked requirements coverage, document links, whitespace and credential patterns. Build and tests do not apply.
+- Recommended commit: `docs(discovery): consolidate MVP requirements and backlog`.
