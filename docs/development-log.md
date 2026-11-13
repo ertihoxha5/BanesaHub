@@ -42,3 +42,11 @@
 - Discovery remains open pending M00.2 interview evidence and review. M01 stays unstarted. The tool recheck found .NET SDK 9.0.306 and Visual Studio 2022 17.14.
 - Validation checked requirements coverage, document links, whitespace and credential patterns. Build and tests do not apply.
 - Recommended commit: `docs(discovery): consolidate MVP requirements and backlog`.
+
+## 2026-11-13 — Milestone 1, Setup Checkpoint 1 (PDF M01.1)
+
+- Created BanesaHub.sln and seven project shells targeting net10.0. Added minimal controller and MVC startup files. Project references and xUnit setup are later checkpoints.
+- Started setup with real interview validation still open. Practice interviews remain fictional and do not count as evidence.
+- Verified solution membership and target frameworks. The build failed. A direct project build confirmed NETSDK1045 because only SDK 9.0.306 is installed. Install the .NET 10 SDK and a compatible Visual Studio before validating.
+- Files: BanesaHub.sln, five projects under src, two under tests, docs/milestones.md and docs/development-log.md.
+- Recommended commit: chore(solution): initialize BanesaHub .NET 10 scaffold
