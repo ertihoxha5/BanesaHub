@@ -63,3 +63,13 @@
 - Updated README.md and added AGENTS.md. Verified the existing rules for .vs, bin and obj.
 - Restored and built all seven projects using isolated .NET SDK 10.0.404 with zero warnings and errors. Diff and credential checks passed. Test execution is scheduled for M01.4.
 - Recommended commit: chore(solution): configure project references and repository guidance
+
+## 2026-11-13 — Milestone 1, Setup Checkpoint 3 (PDF M01.3)
+
+- Registered health checks and OpenAPI in the API host. GET /health checks process liveness. GET /openapi/v1.json serves the generated document in Development.
+- Configured JSON console logs with trace and span IDs. Database readiness will follow database setup.
+- Restored and built all seven projects with zero warnings or errors. Verified health 200 and JSON trace scopes in both environments. OpenAPI returned 200 in Development and 404 in Production.
+- Commit commands from the repository root
+
+  git add -- src/BanesaHub.API/Program.cs src/BanesaHub.API/BanesaHub.API.csproj docs/milestones.md docs/development-log.md
+  git commit -m "feat(api): add health checks logging and OpenAPI"
