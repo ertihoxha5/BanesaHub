@@ -56,3 +56,10 @@
 - Restored and built all seven projects with isolated .NET SDK 10.0.404. Build passed with zero warnings and errors.
 - The isolated SDK lives outside the repository. Visual Studio toolchain validation remains pending. xUnit setup is scheduled for M01.4.
 - Recommended commit: docs(solution): record .NET 10 scaffold validation
+
+## 2026-11-13 — Milestone 1, Setup Checkpoint 2 (PDF M01.2)
+
+- Added the five production project references defined by the specification. Domain and Web have no project references. Test references are scheduled with xUnit.
+- Updated README.md and added AGENTS.md. Verified the existing rules for .vs, bin and obj.
+- Restored and built all seven projects using isolated .NET SDK 10.0.404 with zero warnings and errors. Diff and credential checks passed. Test execution is scheduled for M01.4.
+- Recommended commit: chore(solution): configure project references and repository guidance

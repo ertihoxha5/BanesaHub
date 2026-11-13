@@ -2,7 +2,7 @@
 
 Source: BanesaHub product specification v1.0, 13 November 2026, pp. 1–16. PDF IDs, dependencies and acceptance criteria govern scope. The day-one checklist and embedded example prompt are reference material; the owner authorizes one checkpoint at a time.
 
-Current: **Milestone 1 — Requirements and Solution Foundation, M01.1 — Solution and project scaffold**. Scaffold created and build validated with isolated .NET SDK 10.0.404. M00.2 interview validation stays open. Setup started with interview validation deferred to a later checkpoint.
+Current: **Milestone 1 — Requirements and Solution Foundation, M01.2 — Project references and repository guidance**. Completed and built with isolated .NET SDK 10.0.404. M00.2 interview validation stays open. Setup started with interview validation deferred to a later checkpoint.
 
 The owner's Milestone 1 spans discovery and solution setup (M00 and M01.1–4). Milestone 2 completes the database portion of M01 (M01.5–6). Owner milestones 3–12 correspond to PDF M02–M11. The PDF's 16-week schedule is an estimate.
 
