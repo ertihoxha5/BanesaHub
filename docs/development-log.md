@@ -93,3 +93,12 @@
 
   git add -- .config/dotnet-tools.json src/BanesaHub.API/BanesaHub.API.csproj src/BanesaHub.API/Program.cs src/BanesaHub.Infrastructure/BanesaHub.Infrastructure.csproj src/BanesaHub.Infrastructure/Persistence/BanesaHubDbContext.cs src/BanesaHub.Infrastructure/Persistence/PersistenceServiceCollectionExtensions.cs docs/setup-guide.md docs/milestones.md docs/development-log.md
   git commit -m "feat(persistence): configure EF Core and SQL Server"
+
+## 2026-11-13 — Setup Checkpoint 6 (PDF M01.6)
+
+- Generated the initial EF migration and snapshot for the current empty model. Reviewed the idempotent SQL and confirmed no pending model changes.
+- Solution built without warnings or errors. Three API smoke cases passed. SQL Server preflight failed with an SSPI authentication error, so live application and history verification remain blocked.
+- Commit commands from the repository root
+
+  git add -- src/BanesaHub.Infrastructure/Persistence/Migrations docs/setup-guide.md docs/milestones.md docs/development-log.md
+  git commit -m "feat(persistence): add initial EF Core baseline migration"
