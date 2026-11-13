@@ -14,6 +14,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.15" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="10.0.15" />
     <ProjectReference Include="../../src/BanesaHub.API/BanesaHub.API.csproj" />
   </ItemGroup>
 </Project>

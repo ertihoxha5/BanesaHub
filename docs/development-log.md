@@ -112,3 +112,12 @@
 
   git add -- src/BanesaHub.API/Program.cs src/BanesaHub.Infrastructure/BanesaHub.Infrastructure.csproj src/BanesaHub.Infrastructure/Persistence/BanesaHubDbContext.cs src/BanesaHub.Infrastructure/Persistence/Migrations docs/milestones.md docs/development-log.md
   git commit -m "feat(auth): configure Identity persistence"
+
+## 2026-11-13 — Account endpoints (M02.1b)
+
+- Added registration, login and logout under /api/v1/auth using secure Identity cookies, antiforgery and per-IP rate limiting. Over HTTPS, fetch /api/v1/auth/antiforgery and send the requestToken as X-CSRF-TOKEN with both the relevant cookies and POST request. Fetch a fresh token after login.
+- Build passed without warnings or errors. Five integration cases passed, including two account flow cases with EF InMemory and ephemeral data protection. Live SQL Server account validation remains pending.
+- Commit commands from the repository root
+
+  git add -- src/BanesaHub.API/Program.cs src/BanesaHub.API/Controllers/AuthController.cs tests/BanesaHub.IntegrationTests/AuthTests.cs tests/BanesaHub.IntegrationTests/BanesaHub.IntegrationTests.csproj docs/milestones.md docs/development-log.md
+  git commit -m "feat(auth): add registration login and logout"
