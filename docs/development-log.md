@@ -50,3 +50,9 @@
 - Verified solution membership and target frameworks. The build failed. A direct project build confirmed NETSDK1045 because only SDK 9.0.306 is installed. Install the .NET 10 SDK and a compatible Visual Studio before validating.
 - Files: BanesaHub.sln, five projects under src, two under tests, docs/milestones.md and docs/development-log.md.
 - Recommended commit: chore(solution): initialize BanesaHub .NET 10 scaffold
+
+## 2026-11-13 — M01.1 build validation
+
+- Restored and built all seven projects with isolated .NET SDK 10.0.404. Build passed with zero warnings and errors.
+- The isolated SDK lives outside the repository. Visual Studio toolchain validation remains pending. xUnit setup is scheduled for M01.4.
+- Recommended commit: docs(solution): record .NET 10 scaffold validation
