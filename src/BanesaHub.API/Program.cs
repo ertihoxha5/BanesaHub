@@ -1,3 +1,5 @@
+using BanesaHub.Infrastructure.Persistence;
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Logging.ClearProviders();
@@ -8,6 +10,7 @@ builder.Logging.Configure(options =>
 builder.Logging.AddJsonConsole(options => options.IncludeScopes = true);
 
 builder.Services.AddControllers();
+builder.Services.AddBanesaHubPersistence(builder.Configuration);
 builder.Services.AddHealthChecks();
 builder.Services.AddOpenApi();
 

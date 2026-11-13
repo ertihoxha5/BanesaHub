@@ -3,6 +3,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <UserSecretsId>BanesaHub.API-LocalDevelopment</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,5 +17,8 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="BanesaHub.IntegrationTests" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.15" PrivateAssets="all" />
   </ItemGroup>
 </Project>

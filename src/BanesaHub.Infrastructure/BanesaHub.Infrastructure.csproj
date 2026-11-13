@@ -9,4 +9,7 @@
     <ProjectReference Include="../BanesaHub.Application/BanesaHub.Application.csproj" />
     <ProjectReference Include="../BanesaHub.Domain/BanesaHub.Domain.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.15" />
+  </ItemGroup>
 </Project>

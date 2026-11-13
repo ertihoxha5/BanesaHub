@@ -83,3 +83,13 @@
 
   git add -- .github/workflows/ci.yml src/BanesaHub.API/BanesaHub.API.csproj tests/BanesaHub.IntegrationTests/ApiSmokeTests.cs tests/BanesaHub.IntegrationTests/BanesaHub.IntegrationTests.csproj tests/BanesaHub.UnitTests/BanesaHub.UnitTests.csproj docs/milestones.md docs/development-log.md
   git commit -m "test(api): add smoke tests and CI workflow"
+
+## 2026-11-13 — Setup Checkpoint 5 (PDF M01.5)
+
+- Registered a scoped EF Core context with the SQL Server provider. Connection settings come from configuration and are required when resolving the context.
+- Pinned the EF CLI and documented the local Windows authentication and user secrets setup.
+- The solution restored and built without warnings or errors. Three API smoke cases passed. The EF design-time operation resolved BanesaHubDbContext with the SQL Server provider.
+- Live SQL Server access remains unverified. Windows authentication failed from the agent session. No migration or database was created.
+
+  git add -- .config/dotnet-tools.json src/BanesaHub.API/BanesaHub.API.csproj src/BanesaHub.API/Program.cs src/BanesaHub.Infrastructure/BanesaHub.Infrastructure.csproj src/BanesaHub.Infrastructure/Persistence/BanesaHubDbContext.cs src/BanesaHub.Infrastructure/Persistence/PersistenceServiceCollectionExtensions.cs docs/setup-guide.md docs/milestones.md docs/development-log.md
+  git commit -m "feat(persistence): configure EF Core and SQL Server"
