@@ -137,3 +137,11 @@
 
   git add -- src/BanesaHub.Domain/Organizations src/BanesaHub.Infrastructure/Persistence/BanesaHubDbContext.cs src/BanesaHub.Infrastructure/Persistence/Migrations docs/milestones.md docs/development-log.md
   git commit -m "feat(organizations): add organization and membership schema"
+
+## 2026-11-14 — Organization creation (M02.2b)
+
+- Added authenticated POST /api/v1/organizations with antiforgery validation. The creator receives the Owner role from the authenticated user ID. The organization and membership share one EF Core save. Slugs are normalized to lowercase and duplicate slugs return 409.
+- Build passed without warnings or errors. All seven integration cases passed. The new case checks authentication, antiforgery, validation, duplicates, and persisted ownership using EF Core InMemory. Live SQL Server transaction and concurrent slug behavior remain unverified.
+
+  git add -- src/BanesaHub.API/Program.cs src/BanesaHub.API/Controllers/OrganizationsController.cs src/BanesaHub.Application/Organizations/IOrganizationRegistration.cs src/BanesaHub.Infrastructure/Persistence/OrganizationRegistration.cs tests/BanesaHub.IntegrationTests/AuthTests.cs docs/milestones.md docs/development-log.md
+  git commit -m "feat(organizations): create organizations with owner membership"

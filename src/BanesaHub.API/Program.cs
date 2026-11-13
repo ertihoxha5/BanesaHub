@@ -1,3 +1,4 @@
+using BanesaHub.Application.Organizations;
 using BanesaHub.API.Auth;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
@@ -15,6 +16,7 @@ builder.Logging.AddJsonConsole(options => options.IncludeScopes = true);
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddBanesaHubPersistence(builder.Configuration);
+builder.Services.AddScoped<IOrganizationRegistration, OrganizationRegistration>();
 builder.Services.AddIdentityCore<IdentityUser<Guid>>(options =>
 {
     options.User.RequireUniqueEmail = true;

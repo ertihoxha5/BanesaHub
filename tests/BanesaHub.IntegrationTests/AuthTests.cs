@@ -101,6 +101,50 @@ public sealed class AuthTests(WebApplicationFactory<Program> factory)
         Assert.Equal(HttpStatusCode.NoContent, newLogin.StatusCode);
     }
 
+    [Fact]
+    public async Task OrganizationCreationRequiresAuthenticationAndAssignsOwner()
+    {
+        using var host = CreateHost();
+        using var client = host.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            BaseAddress = new Uri("https://localhost"),
+            AllowAutoRedirect = false
+        });
+        const string route = "/api/v1/organizations";
+        var organization = new { name = " Example Rentals ", slug = "EXAMPLE-RENTALS" };
+        using var anonymous = await client.PostAsJsonAsync(route, organization);
+        Assert.Equal(HttpStatusCode.Unauthorized, anonymous.StatusCode);
+
+        await RefreshToken(client);
+        const string email = "owner@example.test";
+        var credentials = new { email, password = $"Test!1{Guid.NewGuid():N}" };
+        using var register = await client.PostAsJsonAsync("/api/v1/auth/register", credentials);
+        Assert.Equal(HttpStatusCode.Created, register.StatusCode);
+        using var login = await client.PostAsJsonAsync("/api/v1/auth/login", credentials);
+        Assert.Equal(HttpStatusCode.NoContent, login.StatusCode);
+        using var staleToken = await client.PostAsJsonAsync(route, organization);
+        Assert.Equal(HttpStatusCode.BadRequest, staleToken.StatusCode);
+        await RefreshToken(client);
+
+        using var created = await client.PostAsJsonAsync(route, organization);
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        using var duplicate = await client.PostAsJsonAsync(route, new { name = "Duplicate", slug = "example-rentals" });
+        Assert.Equal(HttpStatusCode.Conflict, duplicate.StatusCode);
+        using var invalid = await client.PostAsJsonAsync(route, new { name = "Invalid", slug = "invalid slug" });
+        Assert.Equal(HttpStatusCode.BadRequest, invalid.StatusCode);
+
+        using var scope = host.Services.CreateScope();
+        var database = scope.ServiceProvider.GetRequiredService<BanesaHubDbContext>();
+        var user = await database.Users.SingleAsync();
+        var saved = await database.Organizations.SingleAsync();
+        var membership = await database.Memberships.SingleAsync();
+        Assert.Equal("Example Rentals", saved.Name);
+        Assert.Equal("example-rentals", saved.Slug);
+        Assert.Equal(saved.Id, membership.OrganizationId);
+        Assert.Equal(user.Id, membership.UserId);
+        Assert.Equal(BanesaHub.Domain.Organizations.MembershipRole.Owner, membership.Role);
+    }
+
     private WebApplicationFactory<Program> CreateHost(IPasswordResetDelivery? delivery = null)
     {
         var databaseName = Guid.NewGuid().ToString();
