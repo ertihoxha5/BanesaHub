@@ -129,3 +129,11 @@
 
   git add -- README.md docs/setup-guide.md docs/milestones.md docs/development-log.md src/BanesaHub.API/Program.cs src/BanesaHub.API/Auth/PasswordResetDelivery.cs src/BanesaHub.API/Controllers/AuthController.cs tests/BanesaHub.IntegrationTests/AuthTests.cs
   git commit -m "feat(auth): add password reset"
+
+## 2026-11-14 — Organization and membership schema (M02.2a)
+
+- Added organizations and memberships with organization-specific roles. The migration enforces a unique slug, one membership per organization and user, valid roles, and foreign keys.
+- Build and all six integration cases passed. EF found no model drift. Reviewed the generated SQL constraints. The migration has yet to be applied to live SQL Server.
+
+  git add -- src/BanesaHub.Domain/Organizations src/BanesaHub.Infrastructure/Persistence/BanesaHubDbContext.cs src/BanesaHub.Infrastructure/Persistence/Migrations docs/milestones.md docs/development-log.md
+  git commit -m "feat(organizations): add organization and membership schema"
