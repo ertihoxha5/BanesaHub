@@ -1,3 +1,4 @@
+using BanesaHub.API.Auth;
 using Microsoft.AspNetCore.DataProtection;
 using System.Net;
 using System.Net.Http.Json;
@@ -18,15 +19,7 @@ public sealed class AuthTests(WebApplicationFactory<Program> factory)
     [InlineData(true)]
     public async Task AccountFlowEnforcesAntiforgeryAndLockout(bool lockAccount)
     {
-        var databaseName = Guid.NewGuid().ToString();
-        using var host = factory.WithWebHostBuilder(builder => builder.ConfigureServices(services =>
-        {
-            services.AddSingleton<IDataProtectionProvider, EphemeralDataProtectionProvider>();
-            services.RemoveAll<DbContextOptions<BanesaHubDbContext>>();
-            services.AddScoped(_ => new DbContextOptionsBuilder<BanesaHubDbContext>()
-                .UseInMemoryDatabase(databaseName)
-                .Options);
-        }));
+        using var host = CreateHost();
         using var client = host.CreateClient(new WebApplicationFactoryClientOptions
         {
             BaseAddress = new Uri("https://localhost"),
@@ -61,6 +54,79 @@ public sealed class AuthTests(WebApplicationFactory<Program> factory)
             Assert.Equal(HttpStatusCode.NoContent, logout.StatusCode);
             using var signedOut = await client.PostAsync("/api/v1/auth/logout", null);
             Assert.Equal(HttpStatusCode.Unauthorized, signedOut.StatusCode);
+        }
+    }
+
+    [Fact]
+    public async Task PasswordResetChangesPasswordAndInvalidatesExistingSession()
+    {
+        var delivery = new CapturedResetDelivery();
+        using var host = CreateHost(delivery);
+        using var client = host.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            BaseAddress = new Uri("https://localhost"),
+            AllowAutoRedirect = false
+        });
+        const string email = "reset@example.test";
+        var original = $"Old!1{Guid.NewGuid():N}";
+        var replacement = $"New!1{Guid.NewGuid():N}";
+        await RefreshToken(client);
+
+        using var registration = await client.PostAsJsonAsync("/api/v1/auth/register", new { email, password = original });
+        Assert.Equal(HttpStatusCode.Created, registration.StatusCode);
+        using var login = await client.PostAsJsonAsync("/api/v1/auth/login", new { email, password = original });
+        Assert.Equal(HttpStatusCode.NoContent, login.StatusCode);
+        await RefreshToken(client);
+
+        using var unknown = await client.PostAsJsonAsync("/api/v1/auth/forgot-password", new { email = "unknown@example.test" });
+        Assert.Equal(HttpStatusCode.Accepted, unknown.StatusCode);
+        Assert.Null(delivery.Code);
+        using var request = await client.PostAsJsonAsync("/api/v1/auth/forgot-password", new { email });
+        Assert.Equal(HttpStatusCode.Accepted, request.StatusCode);
+        Assert.NotNull(delivery.Code);
+
+        var reset = new { email, code = delivery.Code, newPassword = replacement };
+        using var response = await client.PostAsJsonAsync("/api/v1/auth/reset-password", reset);
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+
+        using var oldSession = await client.PostAsync("/api/v1/auth/logout", null);
+        Assert.Equal(HttpStatusCode.Unauthorized, oldSession.StatusCode);
+
+        await RefreshToken(client);
+        using var replay = await client.PostAsJsonAsync("/api/v1/auth/reset-password", reset);
+        Assert.Equal(HttpStatusCode.BadRequest, replay.StatusCode);
+        using var oldPassword = await client.PostAsJsonAsync("/api/v1/auth/login", new { email, password = original });
+        Assert.Equal(HttpStatusCode.Unauthorized, oldPassword.StatusCode);
+        using var newLogin = await client.PostAsJsonAsync("/api/v1/auth/login", new { email, password = replacement });
+        Assert.Equal(HttpStatusCode.NoContent, newLogin.StatusCode);
+    }
+
+    private WebApplicationFactory<Program> CreateHost(IPasswordResetDelivery? delivery = null)
+    {
+        var databaseName = Guid.NewGuid().ToString();
+        return factory.WithWebHostBuilder(builder => builder.ConfigureServices(services =>
+        {
+            services.AddSingleton<IDataProtectionProvider, EphemeralDataProtectionProvider>();
+            services.RemoveAll<DbContextOptions<BanesaHubDbContext>>();
+            services.AddScoped(_ => new DbContextOptionsBuilder<BanesaHubDbContext>()
+                .UseInMemoryDatabase(databaseName)
+                .Options);
+            if (delivery is not null)
+            {
+                services.AddSingleton(delivery);
+            }
+        }));
+    }
+
+    private sealed class CapturedResetDelivery : IPasswordResetDelivery
+    {
+        public bool IsConfigured => true;
+        public string? Code { get; private set; }
+
+        public Task SendAsync(string recipient, string token, CancellationToken cancellationToken)
+        {
+            Code = token;
+            return Task.CompletedTask;
         }
     }
 

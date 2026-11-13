@@ -1,3 +1,7 @@
+using System.Net.Mail;
+using System.Text;
+using BanesaHub.API.Auth;
+using Microsoft.AspNetCore.WebUtilities;
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authorization;
@@ -55,6 +59,65 @@ public sealed class AuthController(
         await signIn.SignOutAsync();
         return NoContent();
     }
+
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword(
+        ResetRequest request, [FromServices] IPasswordResetDelivery delivery,
+        [FromServices] ILogger<AuthController> logger, CancellationToken cancellationToken)
+    {
+        if (!delivery.IsConfigured)
+        {
+            return Problem(statusCode: 503, title: "Rivendosja e fjalëkalimit nuk është në dispozicion.");
+        }
+
+        var user = await users.FindByEmailAsync(request.Email);
+        if (user?.Email is { } email)
+        {
+            var token = await users.GeneratePasswordResetTokenAsync(user);
+            var code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+            try
+            {
+                await delivery.SendAsync(email, code, cancellationToken);
+            }
+            catch (SmtpException)
+            {
+                logger.LogWarning("Password reset email could not be sent.");
+            }
+        }
+
+        return Accepted();
+    }
+
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword(ResetConfirmation request)
+    {
+        var user = await users.FindByEmailAsync(request.Email);
+        if (user is not null)
+        {
+            try
+            {
+                var token = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(request.Code));
+                var result = await users.ResetPasswordAsync(user, token, request.NewPassword);
+                if (result.Succeeded)
+                {
+                    return NoContent();
+                }
+            }
+            catch (FormatException)
+            {
+                // Malformed and invalid tokens receive the same response.
+            }
+        }
+
+        return Problem(statusCode: 400, title: "Rivendosja nuk u krye. Kontrolloni kodin dhe fjalëkalimin e ri.");
+    }
+
+    public sealed record ResetRequest([Required, EmailAddress, StringLength(256)] string Email);
+
+    public sealed record ResetConfirmation(
+        [Required, EmailAddress, StringLength(256)] string Email,
+        [Required, StringLength(2048)] string Code,
+        [Required, StringLength(128)] string NewPassword);
 
     public sealed record Credentials(
         [Required, EmailAddress, StringLength(256)] string Email,

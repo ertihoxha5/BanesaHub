@@ -1,3 +1,4 @@
+using BanesaHub.API.Auth;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
 using BanesaHub.Infrastructure.Persistence;
@@ -22,7 +23,13 @@ builder.Services.AddIdentityCore<IdentityUser<Guid>>(options =>
     options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
 })
 .AddEntityFrameworkStores<BanesaHubDbContext>()
-.AddSignInManager();
+.AddSignInManager()
+.AddDefaultTokenProviders();
+builder.Services.Configure<DataProtectionTokenProviderOptions>(options =>
+    options.TokenLifespan = TimeSpan.FromMinutes(30));
+builder.Services.Configure<SecurityStampValidatorOptions>(options =>
+    options.ValidationInterval = TimeSpan.Zero);
+builder.Services.AddScoped<IPasswordResetDelivery, SmtpPasswordResetDelivery>();
 
 builder.Services.AddAuthentication(IdentityConstants.ApplicationScheme)
     .AddIdentityCookies();

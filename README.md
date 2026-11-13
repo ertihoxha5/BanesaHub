@@ -14,6 +14,8 @@ dotnet build BanesaHub.sln --no-restore
 
 M01 currently provides the project scaffold. Health, OpenAPI, xUnit, CI and SQL Server setup are tracked in [the milestone plan](docs/milestones.md). See [product requirements](docs/product-requirements.md) for MVP scope.
 
+See the [setup guide](docs/setup-guide.md) for running both hosts with HTTPS and applying local database migrations.
+
 ## Project boundaries
 
 | Project | Responsibility and direct project references |

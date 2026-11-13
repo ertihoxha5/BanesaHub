@@ -121,3 +121,11 @@
 
   git add -- src/BanesaHub.API/Program.cs src/BanesaHub.API/Controllers/AuthController.cs tests/BanesaHub.IntegrationTests/AuthTests.cs tests/BanesaHub.IntegrationTests/BanesaHub.IntegrationTests.csproj docs/milestones.md docs/development-log.md
   git commit -m "feat(auth): add registration login and logout"
+
+## 2026-11-13 — Password reset (M02.1c)
+
+- Added Identity password reset tokens with a 30-minute lifetime and SMTP delivery over STARTTLS. The reset flow rejects previously issued sessions on the next authenticated request.
+- Added API and MVC launch instructions. Build passed with zero warnings or errors. All six integration cases passed using test email capture and in-memory storage. Live SMTP and SQL Server reset were not verified.
+
+  git add -- README.md docs/setup-guide.md docs/milestones.md docs/development-log.md src/BanesaHub.API/Program.cs src/BanesaHub.API/Auth/PasswordResetDelivery.cs src/BanesaHub.API/Controllers/AuthController.cs tests/BanesaHub.IntegrationTests/AuthTests.cs
+  git commit -m "feat(auth): add password reset"
