@@ -302,3 +302,12 @@
 
   git add -- src/BanesaHub.API/Controllers/LeasesController.cs src/BanesaHub.API/Program.cs src/BanesaHub.Application/Tenants/ILeaseLifecycle.cs src/BanesaHub.Infrastructure/Persistence/LeaseLifecycle.cs tests/BanesaHub.IntegrationTests/AuthTests.cs docs/milestones.md docs/tenant-and-lease-design.md docs/development-log.md
   git commit -m "feat(leases): activate drafts with overlap protection"
+
+## 2026-11-15 — Rent amendments and lease ending (M04.2c)
+
+- Added effective-dated rent amendments with an expected version check. Added actual lease ending without rewriting prior terms. Both operations reuse the activation lock and transaction.
+- Added the RecordLeaseEndDate migration. Activation checks the recorded date range of ended leases to prevent conflicting history while allowing a replacement the next day.
+- Restore and build passed with zero warnings and errors. EF found no pending model changes. Seven integration tests passed. The opt-in SQL Server case contains the amendment and ending assertions and was skipped, so those operations remain unverified on a live database. Diff and scoped secret checks passed.
+
+  git add -- src/BanesaHub.API/Controllers/LeasesController.cs src/BanesaHub.Application/Tenants/ILeaseLifecycle.cs src/BanesaHub.Domain/Tenants/Lease.cs src/BanesaHub.Infrastructure/Persistence/LeaseLifecycle.cs src/BanesaHub.Infrastructure/Persistence/LeaseModelConfiguration.cs src/BanesaHub.Infrastructure/Persistence/Migrations/20261115221754_RecordLeaseEndDate.cs src/BanesaHub.Infrastructure/Persistence/Migrations/20261115221754_RecordLeaseEndDate.Designer.cs src/BanesaHub.Infrastructure/Persistence/Migrations/BanesaHubDbContextModelSnapshot.cs tests/BanesaHub.IntegrationTests/AuthTests.cs docs/milestones.md docs/tenant-and-lease-design.md docs/development-log.md
+  git commit -m "feat(leases): add rent amendments and lease ending"

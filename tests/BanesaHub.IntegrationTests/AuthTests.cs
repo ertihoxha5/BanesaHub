@@ -594,8 +594,8 @@ public sealed class AuthTests(WebApplicationFactory<Program> factory)
             return body.GetProperty("id").GetGuid();
         }
 
-        var start = new DateOnly(2027, 1, 1);
-        var end = new DateOnly(2027, 1, 31);
+        var start = new DateOnly(2020, 1, 1);
+        var end = new DateOnly(2020, 1, 31);
         var first = await CreateDraft(start, end);
         var version = await database.LeaseVersions.AsNoTracking().SingleAsync(item => item.LeaseId == first);
         Assert.Equal(1, version.VersionNumber);
@@ -646,6 +646,38 @@ public sealed class AuthTests(WebApplicationFactory<Program> factory)
         Assert.Equal(2, await database.Leases.CountAsync(item =>
             item.OrganizationId == organizationId && item.UnitId == unitId &&
             item.Status == BanesaHub.Domain.Tenants.LeaseStatus.Active));
+
+        var firstAmendment = new { expectedVersion = 1, effectiveFrom = start.AddDays(19), monthlyRent = 399.50m };
+        using var amended = await owner.PostAsJsonAsync($"{route}/{winner}/amend-rent", firstAmendment);
+        Assert.Equal(HttpStatusCode.NoContent, amended.StatusCode);
+        using var stale = await manager.PostAsJsonAsync($"{route}/{winner}/amend-rent", firstAmendment);
+        Assert.Equal(HttpStatusCode.Conflict, stale.StatusCode);
+
+        var versions = await database.LeaseVersions.AsNoTracking().Where(item => item.LeaseId == winner)
+            .OrderBy(item => item.VersionNumber).ToListAsync();
+        Assert.Equal(new[] { 1, 2 }, versions.Select(item => item.VersionNumber));
+        Assert.Equal(325.50m, versions[0].MonthlyRent);
+        Assert.Equal(399.50m, versions[1].MonthlyRent);
+        Assert.Equal(versions[0].Deposit, versions[1].Deposit);
+
+        var endedOn = start.AddDays(14);
+        using var invalidEnd = await owner.PostAsJsonAsync($"{route}/{winner}/end", new { endedOn = start.AddDays(-1) });
+        Assert.Equal(HttpStatusCode.Conflict, invalidEnd.StatusCode);
+        using var ended = await owner.PostAsJsonAsync($"{route}/{winner}/end", new { endedOn });
+        Assert.Equal(HttpStatusCode.NoContent, ended.StatusCode);
+        using var repeatedEnd = await owner.PostAsJsonAsync($"{route}/{winner}/end", new { endedOn });
+        Assert.Equal(HttpStatusCode.NoContent, repeatedEnd.StatusCode);
+        var closedLease = await database.Leases.AsNoTracking().SingleAsync(item => item.Id == winner);
+        Assert.Equal(endedOn, closedLease.EndedOn);
+        Assert.Equal(BanesaHub.Domain.Tenants.LeaseStatus.Ended, closedLease.Status);
+        Assert.Equal(2, await database.LeaseVersions.CountAsync(item => item.LeaseId == winner));
+
+        var overlappingHistory = await CreateDraft(endedOn, end);
+        using var denied = await owner.PostAsync($"{route}/{overlappingHistory}/activate", null);
+        Assert.Equal(HttpStatusCode.Conflict, denied.StatusCode);
+        var replacement = await CreateDraft(endedOn.AddDays(1), end);
+        using var allowed = await owner.PostAsync($"{route}/{replacement}/activate", null);
+        Assert.Equal(HttpStatusCode.NoContent, allowed.StatusCode);
     }
 
     private WebApplicationFactory<Program> CreateHost(IPasswordResetDelivery? delivery = null, string? sqlServer = null)

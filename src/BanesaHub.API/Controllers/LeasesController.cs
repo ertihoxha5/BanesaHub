@@ -34,13 +34,59 @@ public sealed class LeasesController(ILeaseLifecycle lifecycle) : ControllerBase
             return Unauthorized();
         }
 
-        return await lifecycle.ActivateAsync(organizationId, actorId, leaseId, ct) switch
+        return FromOutcome(await lifecycle.ActivateAsync(organizationId, actorId, leaseId, ct));
+    }
+
+    [HttpPost("{leaseId:guid}/amend-rent")]
+    public async Task<IActionResult> AmendRent(Guid organizationId, Guid leaseId, RentAmendmentRequest request, CancellationToken ct)
+    {
+        if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var actorId))
         {
-            LeaseActivation.Activated => NoContent(),
-            LeaseActivation.NotFound => NotFound(),
-            LeaseActivation.Overlap => Problem(statusCode: 409, title: "Njësia ka një kontratë aktive që mbivendoset."),
-            _ => Problem(statusCode: 409, title: "Kjo kontratë nuk mund të aktivizohet në gjendjen aktuale.")
-        };
+            return Unauthorized();
+        }
+
+        var amendment = new RentAmendment(request.ExpectedVersion, request.EffectiveFrom, request.MonthlyRent!.Value);
+        return FromOutcome(await lifecycle.AmendRentAsync(organizationId, actorId, leaseId, amendment, ct));
+    }
+
+    [HttpPost("{leaseId:guid}/end")]
+    public async Task<IActionResult> End(Guid organizationId, Guid leaseId, EndRequest request, CancellationToken ct)
+    {
+        if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var actorId))
+        {
+            return Unauthorized();
+        }
+
+        return FromOutcome(await lifecycle.EndAsync(organizationId, actorId, leaseId, request.EndedOn!.Value, ct));
+    }
+
+    private IActionResult FromOutcome(LeaseOutcome outcome) => outcome switch
+    {
+        LeaseOutcome.Applied => NoContent(),
+        LeaseOutcome.NotFound => NotFound(),
+        LeaseOutcome.Overlap => Problem(statusCode: 409, title: "Njësia ka një kontratë që mbivendoset."),
+        LeaseOutcome.InvalidDate => Problem(statusCode: 409, title: "Data nuk përputhet me kushtet e kontratës."),
+        LeaseOutcome.StaleVersion => Problem(statusCode: 409, title: "Versioni ka ndryshuar. Kontrolloni kushtet e fundit të kontratës."),
+        _ => Problem(statusCode: 409, title: "Gjendja e kontratës nuk e lejon këtë veprim.")
+    };
+
+    public sealed record EndRequest([Required] DateOnly? EndedOn);
+
+    public sealed record RentAmendmentRequest([Range(1, int.MaxValue)] int ExpectedVersion,
+        DateOnly EffectiveFrom, [Required] decimal? MonthlyRent) : IValidatableObject
+    {
+        public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+        {
+            if (EffectiveFrom == default)
+            {
+                yield return new ValidationResult("Shkruani datën e hyrjes në fuqi.", [nameof(EffectiveFrom)]);
+            }
+
+            if (MonthlyRent is decimal rent && !ValidAmount(rent))
+            {
+                yield return new ValidationResult("Qiraja mujore nuk është e vlefshme.", [nameof(MonthlyRent)]);
+            }
+        }
     }
 
     public sealed record DraftRequest(Guid UnitId, Guid TenantId, DateOnly StartDate, DateOnly? EndDate,
@@ -68,8 +114,8 @@ public sealed class LeasesController(ILeaseLifecycle lifecycle) : ControllerBase
                 yield return new ValidationResult("Depozita nuk është e vlefshme.", [nameof(Deposit)]);
             }
         }
-
-        private static bool ValidAmount(decimal value) =>
-            value is >= 0 and <= 9999999999999999.99m && decimal.Round(value, 2) == value;
     }
+
+    private static bool ValidAmount(decimal value) =>
+            value is >= 0 and <= 9999999999999999.99m && decimal.Round(value, 2) == value;
 }

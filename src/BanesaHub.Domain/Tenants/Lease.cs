@@ -7,6 +7,7 @@ public sealed class Lease
     public Guid UnitId { get; init; }
     public Guid TenantId { get; init; }
     public LeaseStatus Status { get; set; } = LeaseStatus.Draft;
+    public DateOnly? EndedOn { get; set; }
 }
 
 public enum LeaseStatus

@@ -12,8 +12,12 @@ M04.1 implements tenant contacts and occupancy history for FR-03 and establishes
 
 A lease identifies one unit and one primary tenant within an organization. Its lifecycle state is draft, active, ended or cancelled. Each version keeps a numbered snapshot of the contractual dates, effective date, monthly rent and optional deposit in EUR, with a UTC recording timestamp. Amendments will append versions so prior terms remain available.
 
-Owners and property managers can create a draft with version 1 using POST /api/v1/organizations/{organizationId}/leases. POST /api/v1/organizations/{organizationId}/leases/{leaseId}/activate checks the latest terms against active leases for the same unit. Both endpoints require the existing session and antiforgery token.
+Owners and property managers can create a draft with version 1 using POST /api/v1/organizations/{organizationId}/leases. POST /api/v1/organizations/{organizationId}/leases/{leaseId}/activate checks the latest terms against active and ended leases for the same unit, using the actual end date for ended leases. Both endpoints require the existing session and antiforgery token.
 
-Activation locks the unit first in a SQL Server serializable transaction. The check treats both endpoints of a contract as inclusive and a missing end date as open-ended. An overlap returns HTTP 409. Repeating activation for an already active lease succeeds without writing again. Future operations that change lease dates or active state must acquire the same unit lock before checking or writing lease state.
+Activation locks the unit first in a SQL Server serializable transaction. The check treats both endpoints of a contract as inclusive and a missing end date as open-ended. An overlap returns HTTP 409. Repeating activation for an already active lease succeeds without writing again. Amendment and ending use the same unit lock.
 
-Lease activation records a contractual state change. Actual occupancy dates, amendments, expiration and early termination are separate lifecycle work.
+Lease activation records a contractual state change. Actual occupancy dates and automatic expiration are separate lifecycle work.
+
+POST /api/v1/organizations/{organizationId}/leases/{leaseId}/amend-rent adds a new rent version for an active lease. The effective date must be later than the latest version's effective date and within the contract. The expected version protects against overwriting a concurrent amendment. This operation retains the original term dates and deposit.
+
+POST /api/v1/organizations/{organizationId}/leases/{leaseId}/end records the inclusive actual end date. The date must fall inside the contract and cannot be later than today in Kosovo. Repeating the same end request succeeds. Prior versions remain available, and future billing must disregard terms that take effect after the actual end date. Replacement leases must start after that date to avoid overlapping the recorded contractual history.

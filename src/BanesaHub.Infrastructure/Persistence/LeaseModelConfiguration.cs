@@ -10,7 +10,12 @@ internal static class LeaseModelConfiguration
     {
         builder.Entity<Lease>(lease =>
         {
-            lease.ToTable("Leases", table => table.HasCheckConstraint("CK_Leases_Status", "[Status] IN (1, 2, 3, 4)"));
+            lease.ToTable("Leases", table =>
+            {
+                table.HasCheckConstraint("CK_Leases_Status", "[Status] IN (1, 2, 3, 4)");
+                table.HasCheckConstraint("CK_Leases_EndedOn",
+                    "([Status] = 3 AND [EndedOn] IS NOT NULL) OR ([Status] <> 3 AND [EndedOn] IS NULL)");
+            });
             lease.HasAlternateKey(item => new { item.OrganizationId, item.Id });
             lease.HasIndex(item => new { item.OrganizationId, item.UnitId, item.Status });
             lease.HasOne<Unit>().WithMany()

@@ -228,6 +228,9 @@ namespace BanesaHub.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<DateOnly?>("EndedOn")
+                        .HasColumnType("date");
+
                     b.Property<Guid>("OrganizationId")
                         .HasColumnType("uniqueidentifier");
 
@@ -248,6 +251,8 @@ namespace BanesaHub.Infrastructure.Persistence.Migrations
 
                     b.ToTable("Leases", null, t =>
                         {
+                            t.HasCheckConstraint("CK_Leases_EndedOn", "([Status] = 3 AND [EndedOn] IS NOT NULL) OR ([Status] <> 3 AND [EndedOn] IS NULL)");
+
                             t.HasCheckConstraint("CK_Leases_Status", "[Status] IN (1, 2, 3, 4)");
                         });
                 });
