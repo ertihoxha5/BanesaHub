@@ -97,6 +97,32 @@ public sealed class InventoryApi(HttpClient http)
     private static string BuildingsPath(Guid organizationId, Guid propertyId) =>
         $"/api/v1/organizations/{organizationId}/properties/{propertyId}/buildings";
 
+    public async Task<(HttpStatusCode Status, TenantRow[] Rows)> ListTenantsAsync(Guid organizationId, string session,
+        int offset, int limit, string? search, CancellationToken ct)
+    {
+        var path = QueryHelpers.AddQueryString(TenantsPath(organizationId), new Dictionary<string, string?>
+        {
+            ["offset"] = offset.ToString(CultureInfo.InvariantCulture),
+            ["limit"] = limit.ToString(CultureInfo.InvariantCulture),
+            ["search"] = search
+        });
+        var (status, rows) = await ReadAsync<TenantRow[]>(path, session, ct);
+        return (status, rows ?? []);
+    }
+
+    public Task<(HttpStatusCode Status, TenantRow? Row)> FindTenantAsync(
+        Guid organizationId, Guid tenantId, string session, CancellationToken ct) =>
+        ReadAsync<TenantRow>($"{TenantsPath(organizationId)}/{tenantId}", session, ct);
+
+    public Task<HttpStatusCode> WriteTenantAsync(Guid organizationId, Guid? tenantId,
+        string session, HttpMethod method, TenantInput? input, CancellationToken ct)
+    {
+        var path = TenantsPath(organizationId);
+        return WriteAsync(tenantId is Guid id ? $"{path}/{id}" : path, session, method, input, ct);
+    }
+
+    private static string TenantsPath(Guid organizationId) => $"/api/v1/organizations/{organizationId}/tenants";
+
     private async Task<(HttpStatusCode Status, T? Data)> ReadAsync<T>(
         string path, string session, CancellationToken ct) where T : class
     {

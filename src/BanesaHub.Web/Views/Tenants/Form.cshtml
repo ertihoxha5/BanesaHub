@@ -1,0 +1,37 @@
+@model BanesaHub.Web.Inventory.TenantForm
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@{
+    Layout = "_InventoryLayout";
+    var action = Model.Archive ? "Archive" : Model.TenantId.HasValue ? "Edit" : "Create";
+    var title = Model.Archive ? "Arkivo qiramarrësin" : Model.TenantId.HasValue ? "Ndrysho qiramarrësin" : "Shto qiramarrës";
+    ViewData["Title"] = title;
+}
+<h1>@title</h1>
+<form class="panel entry" method="post" asp-action="@action" asp-route-organizationId="@Model.OrganizationId"
+      asp-route-tenantId="@Model.TenantId">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    @if (Model.Archive)
+    {
+        <p>Kontakti <strong>@Model.Input.FullName</strong> nuk do të shfaqet në drejtori. Kontratat ekzistuese mbeten të ruajtura.</p>
+    }
+    else
+    {
+        <label class="form-label" asp-for="Input.FullName">Emri dhe mbiemri</label>
+        <input class="form-control" asp-for="Input.FullName" required maxlength="200" autocomplete="off">
+        <span class="text-danger" asp-validation-for="Input.FullName"></span>
+
+        <label class="form-label mt-3" asp-for="Input.Email">Emaili (opsional)</label>
+        <input class="form-control" asp-for="Input.Email" type="email" maxlength="256" autocomplete="off">
+        <span class="text-danger" asp-validation-for="Input.Email"></span>
+
+        <label class="form-label mt-3" asp-for="Input.Phone">Telefoni (opsional)</label>
+        <input class="form-control" asp-for="Input.Phone" type="tel" maxlength="32" autocomplete="off">
+        <span class="text-danger" asp-validation-for="Input.Phone"></span>
+    }
+    <div class="d-flex flex-wrap gap-2 mt-4">
+        <button class="btn @(Model.Archive ? "btn-danger" : "btn-primary")" type="submit">
+            @(Model.Archive ? "Arkivo qiramarrësin" : "Ruaj")
+        </button>
+        <a class="btn btn-outline-secondary" asp-action="Index" asp-route-organizationId="@Model.OrganizationId">Anulo</a>
+    </div>
+</form>

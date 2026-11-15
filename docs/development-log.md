@@ -320,3 +320,12 @@
 
   git add -- src/BanesaHub.API/Controllers/TenantsController.cs src/BanesaHub.API/Program.cs src/BanesaHub.Application/Tenants/ITenantContacts.cs src/BanesaHub.Infrastructure/Persistence/TenantContacts.cs tests/BanesaHub.IntegrationTests/AuthTests.cs docs/milestones.md docs/tenant-and-lease-design.md docs/development-log.md
   git commit -m "feat(tenants): add scoped tenant contact API"
+
+## 2026-11-15 — MVC tenant profiles (M04.3b)
+
+- Added the Albanian tenant directory with name search, pagination, contact profiles and create, edit and archive forms. The property page links to the directory. Contact pages request no-store and writes use MVC and API antiforgery validation.
+- Added an isolated browser integration workflow for navigation, validation, create/edit/archive and rejection of a write under another organization.
+- Restore and build passed with zero warnings and errors. Eight integration tests passed and the opt-in SQL Server test was skipped. Diff and scoped secret checks passed.
+
+  git add -- src/BanesaHub.Web/Controllers/TenantsController.cs src/BanesaHub.Web/Inventory/TenantModels.cs src/BanesaHub.Web/Inventory/InventoryApi.cs src/BanesaHub.Web/Views/Tenants/Form.cshtml src/BanesaHub.Web/Views/Tenants/Index.cshtml src/BanesaHub.Web/Views/Tenants/Profile.cshtml src/BanesaHub.Web/Views/Inventory/Index.cshtml tests/BanesaHub.IntegrationTests/AuthTests.cs docs/milestones.md docs/tenant-and-lease-design.md docs/development-log.md
+  git commit -m "feat(tenants): add MVC tenant profiles"

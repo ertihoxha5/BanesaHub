@@ -9,8 +9,12 @@
     <h1>Pronat</h1>
     @if (Model.Rows is not null)
     {
-        <a class="btn btn-primary" asp-controller="PropertyForms" asp-action="Create"
-           asp-route-organizationId="@Model.OrganizationId">Shto pronë</a>
+        <div class="d-flex flex-wrap gap-2">
+            <a class="btn btn-outline-primary" asp-controller="Tenants" asp-action="Index"
+               asp-route-organizationId="@Model.OrganizationId">Qiramarrësit</a>
+            <a class="btn btn-primary" asp-controller="PropertyForms" asp-action="Create"
+               asp-route-organizationId="@Model.OrganizationId">Shto pronë</a>
+        </div>
     }
 </div>
 

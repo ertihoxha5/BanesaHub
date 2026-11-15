@@ -565,6 +565,107 @@ public sealed class AuthTests(WebApplicationFactory<Program> factory)
         Assert.Contains(roleGrants, item => item.ActorId == inviteeId && item.Action == "MembershipRoleGranted.PropertyManager");
     }
 
+    [Fact]
+    public async Task TenantPagesManageContactsWithinTheirOrganization()
+    {
+        using var host = CreateHost();
+        using var api = host.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            BaseAddress = new Uri("https://localhost"),
+            AllowAutoRedirect = false
+        });
+        var credentials = new { email = "tenant-owner@example.test", password = $"Test!1{Guid.NewGuid():N}" };
+        await RefreshToken(api);
+        using var registration = await api.PostAsJsonAsync("/api/v1/auth/register", credentials);
+        Assert.Equal(HttpStatusCode.Created, registration.StatusCode);
+        using var login = await api.PostAsJsonAsync("/api/v1/auth/login", credentials);
+        Assert.Equal(HttpStatusCode.NoContent, login.StatusCode);
+        await RefreshToken(api);
+
+        async Task<Guid> CreateOrganization(string slug)
+        {
+            using var result = await api.PostAsJsonAsync("/api/v1/organizations", new { name = slug, slug });
+            Assert.Equal(HttpStatusCode.Created, result.StatusCode);
+            return (await result.Content.ReadFromJsonAsync<CreatedOrganization>())!.Id;
+        }
+
+        var organizationId = await CreateOrganization("tenant-org");
+        var otherOrganizationId = await CreateOrganization("other-org");
+        using var scope = host.Services.CreateScope();
+        var database = scope.ServiceProvider.GetRequiredService<BanesaHubDbContext>();
+        using var webHost = new WebApplicationFactory<BanesaHub.Web.Program>()
+            .WithWebHostBuilder(builder => builder.ConfigureServices(services =>
+            {
+                services.AddSingleton<IDataProtectionProvider, EphemeralDataProtectionProvider>();
+                services.AddHttpClient<BanesaHub.Web.Inventory.InventoryApi>()
+                    .ConfigurePrimaryHttpMessageHandler(() => host.Server.CreateHandler());
+            }));
+        using var browser = webHost.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            BaseAddress = new Uri("https://localhost"),
+            AllowAutoRedirect = false
+        });
+        var propertiesRoute = $"/organizations/{organizationId}/properties";
+        string ReadToken(string html) => System.Text.RegularExpressions.Regex.Match(
+            html, "name=\"__RequestVerificationToken\"[^>]*value=\"([^\"]+)\"").Groups[1].Value;
+
+        var signInToken = ReadToken(await browser.GetStringAsync(propertiesRoute));
+        Assert.NotEmpty(signInToken);
+        using var loginForm = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["email"] = credentials.email,
+            ["password"] = credentials.password,
+            ["__RequestVerificationToken"] = signInToken
+        });
+        using var webLogin = await browser.PostAsync($"{propertiesRoute}/sign-in", loginForm);
+        Assert.Equal(HttpStatusCode.Found, webLogin.StatusCode);
+        var token = ReadToken(await browser.GetStringAsync(propertiesRoute));
+        Assert.NotEmpty(token);
+
+        var list = $"/organizations/{organizationId}/tenants";
+        var create = $"{list}/new";
+        Assert.Contains($"href=\"{list}\"", await browser.GetStringAsync(propertiesRoute));
+        Assert.Contains($"action=\"{create}\"", await browser.GetStringAsync(create));
+
+        async Task<HttpResponseMessage> Submit(string route, string name, string email = "")
+        {
+            using var fields = new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["Input.FullName"] = name,
+                ["Input.Email"] = email,
+                ["__RequestVerificationToken"] = token
+            });
+            return await browser.PostAsync(route, fields);
+        }
+
+        using var invalid = await Submit(create, "MVC test tenant", "invalid-email");
+        Assert.Equal(HttpStatusCode.OK, invalid.StatusCode);
+        Assert.Contains("Adresa e emailit", WebUtility.HtmlDecode(await invalid.Content.ReadAsStringAsync()));
+        using var added = await Submit(create, "MVC test tenant", "tenant@example.test");
+        Assert.Equal(HttpStatusCode.Found, added.StatusCode);
+        var tenant = await database.Tenants.AsNoTracking().SingleAsync(item =>
+            item.OrganizationId == organizationId && item.FullName == "MVC test tenant");
+        var profile = $"{list}/{tenant.Id}";
+        Assert.Contains($"href=\"{profile}\"", await browser.GetStringAsync($"{list}?search=MVC"));
+        Assert.DoesNotContain("MVC test tenant", await browser.GetStringAsync($"{list}?search=MVC&page=2"));
+        using var details = await browser.GetAsync(profile);
+        Assert.Equal(HttpStatusCode.OK, details.StatusCode);
+        Assert.True(details.Headers.CacheControl?.NoStore);
+        Assert.Contains("tenant@example.test", await details.Content.ReadAsStringAsync());
+
+        using var denied = await Submit($"/organizations/{otherOrganizationId}/tenants/{tenant.Id}/edit", "Rejected");
+        Assert.Equal(HttpStatusCode.NotFound, denied.StatusCode);
+        Assert.Contains("MVC test tenant", await browser.GetStringAsync($"{profile}/edit"));
+        using var edited = await Submit($"{profile}/edit", "MVC tenant updated");
+        Assert.Equal(HttpStatusCode.Found, edited.StatusCode);
+        Assert.Contains("MVC tenant updated", await browser.GetStringAsync($"{profile}/archive"));
+        using var archived = await Submit($"{profile}/archive", "");
+        Assert.Equal(HttpStatusCode.Found, archived.StatusCode);
+        using var hidden = await browser.GetAsync(profile);
+        Assert.Equal(HttpStatusCode.NotFound, hidden.StatusCode);
+        Assert.True(await database.Tenants.AnyAsync(item => item.Id == tenant.Id && item.IsArchived));
+    }
+
     private static async Task VerifyLeaseActivation(BanesaHubDbContext database, HttpClient owner,
         HttpClient manager, Guid organizationId, Guid otherOrganizationId, Guid unitId)
     {

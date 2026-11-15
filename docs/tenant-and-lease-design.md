@@ -27,3 +27,5 @@ POST /api/v1/organizations/{organizationId}/leases/{leaseId}/end records the inc
 Owners and property managers can list tenant contacts at GET /api/v1/organizations/{organizationId}/tenants. Use search for a name substring and offset and limit for pagination. POST to the collection creates a contact. GET, PUT and DELETE on /tenants/{id} read, replace or archive it. The API validates the name and optional email and phone length, and requires an antiforgery token for writes.
 
 Archived contacts disappear from the contact API and cannot be selected for a new draft or activated draft. Existing leases and occupancy history retain their links to the archived contact. Archiving a contact does not end a lease.
+
+The Albanian MVC directory is available from the organization's property list under Qiramarrësit. Staff can search by name, open a contact profile and create, edit or archive a contact. The browser forms and the server-to-server API writes each use antiforgery protection.
