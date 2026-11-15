@@ -311,3 +311,12 @@
 
   git add -- src/BanesaHub.API/Controllers/LeasesController.cs src/BanesaHub.Application/Tenants/ILeaseLifecycle.cs src/BanesaHub.Domain/Tenants/Lease.cs src/BanesaHub.Infrastructure/Persistence/LeaseLifecycle.cs src/BanesaHub.Infrastructure/Persistence/LeaseModelConfiguration.cs src/BanesaHub.Infrastructure/Persistence/Migrations/20261115221754_RecordLeaseEndDate.cs src/BanesaHub.Infrastructure/Persistence/Migrations/20261115221754_RecordLeaseEndDate.Designer.cs src/BanesaHub.Infrastructure/Persistence/Migrations/BanesaHubDbContextModelSnapshot.cs tests/BanesaHub.IntegrationTests/AuthTests.cs docs/milestones.md docs/tenant-and-lease-design.md docs/development-log.md
   git commit -m "feat(leases): add rent amendments and lease ending"
+
+## 2026-11-15 — Tenant contact API (M04.3a)
+
+- Added organization-scoped tenant list, detail, create, update and archive endpoints for owners and property managers. The list supports name search and pagination. Contact responses are marked no-store.
+- Added validation, contact normalization and integration coverage for archive retention and cross-organization read, update and archive denial. The lease fixture now uses the tenant API.
+- Restore and build passed with zero warnings and errors. Seven integration tests passed and the opt-in SQL Server test was skipped. Diff and scoped secret checks passed.
+
+  git add -- src/BanesaHub.API/Controllers/TenantsController.cs src/BanesaHub.API/Program.cs src/BanesaHub.Application/Tenants/ITenantContacts.cs src/BanesaHub.Infrastructure/Persistence/TenantContacts.cs tests/BanesaHub.IntegrationTests/AuthTests.cs docs/milestones.md docs/tenant-and-lease-design.md docs/development-log.md
+  git commit -m "feat(tenants): add scoped tenant contact API"

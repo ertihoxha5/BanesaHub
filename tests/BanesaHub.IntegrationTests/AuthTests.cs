@@ -568,14 +568,57 @@ public sealed class AuthTests(WebApplicationFactory<Program> factory)
     private static async Task VerifyLeaseActivation(BanesaHubDbContext database, HttpClient owner,
         HttpClient manager, Guid organizationId, Guid otherOrganizationId, Guid unitId)
     {
-        var tenant = new BanesaHub.Domain.Tenants.Tenant
-        {
-            Id = Guid.NewGuid(),
-            OrganizationId = organizationId,
-            FullName = "Lease test tenant"
-        };
-        database.Tenants.Add(tenant);
-        await database.SaveChangesAsync();
+        var tenantsRoute = $"/api/v1/organizations/{organizationId}/tenants";
+        using var invalidEmail = await owner.PostAsJsonAsync(tenantsRoute,
+            new { fullName = "Invalid contact", email = "not-an-email" });
+        Assert.Equal(HttpStatusCode.BadRequest, invalidEmail.StatusCode);
+
+        using var created = await manager.PostAsJsonAsync(tenantsRoute,
+            new { fullName = " Lease test tenant ", email = " lease@example.test ", phone = " " });
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        var contactRoute = created.Headers.Location!.PathAndQuery;
+        var tenantId = Guid.Parse(contactRoute.Split('/')[^1]);
+        Assert.True(created.Headers.CacheControl?.NoStore);
+        var tenant = await owner.GetFromJsonAsync<System.Text.Json.JsonElement>(contactRoute);
+        Assert.Equal("Lease test tenant", tenant.GetProperty("fullName").GetString());
+        Assert.Equal("lease@example.test", tenant.GetProperty("email").GetString());
+        Assert.Equal(System.Text.Json.JsonValueKind.Null, tenant.GetProperty("phone").ValueKind);
+
+        using var another = await owner.PostAsJsonAsync(tenantsRoute, new { fullName = "Archive test" });
+        Assert.Equal(HttpStatusCode.Created, another.StatusCode);
+        var archiveRoute = another.Headers.Location!.PathAndQuery;
+        var filtered = await owner.GetFromJsonAsync<System.Text.Json.JsonElement[]>($"{tenantsRoute}?search=Lease&limit=1");
+        Assert.Equal(tenantId, Assert.Single(filtered!).GetProperty("id").GetGuid());
+        var nextContacts = await owner.GetFromJsonAsync<System.Text.Json.JsonElement[]>($"{tenantsRoute}?search=Lease&offset=1&limit=1");
+        Assert.Empty(nextContacts!);
+
+        var wrongContact = $"/api/v1/organizations/{otherOrganizationId}/tenants/{tenantId}";
+        using var deniedRead = await manager.GetAsync(wrongContact);
+        Assert.Equal(HttpStatusCode.NotFound, deniedRead.StatusCode);
+        using var deniedUpdate = await manager.PutAsJsonAsync(wrongContact, new { fullName = "Changed outside organization" });
+        Assert.Equal(HttpStatusCode.NotFound, deniedUpdate.StatusCode);
+        using var deniedArchive = await manager.DeleteAsync(wrongContact);
+        Assert.Equal(HttpStatusCode.NotFound, deniedArchive.StatusCode);
+        var unchanged = await database.Tenants.AsNoTracking().SingleAsync(item => item.Id == tenantId);
+        Assert.Equal("Lease test tenant", unchanged.FullName);
+        Assert.False(unchanged.IsArchived);
+
+        using var updated = await owner.PutAsJsonAsync(contactRoute,
+            new { fullName = "Lease test tenant", phone = " +383 44 000 000 " });
+        Assert.Equal(HttpStatusCode.NoContent, updated.StatusCode);
+        var edited = await owner.GetFromJsonAsync<System.Text.Json.JsonElement>(contactRoute);
+        Assert.Equal("+383 44 000 000", edited.GetProperty("phone").GetString());
+        Assert.Equal(System.Text.Json.JsonValueKind.Null, edited.GetProperty("email").ValueKind);
+
+        using var archived = await owner.DeleteAsync(archiveRoute);
+        Assert.Equal(HttpStatusCode.NoContent, archived.StatusCode);
+        using var hidden = await owner.GetAsync(archiveRoute);
+        Assert.Equal(HttpStatusCode.NotFound, hidden.StatusCode);
+        var archiveId = Guid.Parse(archiveRoute.Split('/')[^1]);
+        Assert.True(await database.Tenants.AnyAsync(item => item.Id == archiveId && item.IsArchived));
+        var contacts = await owner.GetFromJsonAsync<System.Text.Json.JsonElement[]>(tenantsRoute);
+        Assert.Equal(tenantId, Assert.Single(contacts!).GetProperty("id").GetGuid());
+
         var route = $"/api/v1/organizations/{organizationId}/leases";
 
         async Task<Guid> CreateDraft(DateOnly start, DateOnly? end)
@@ -583,7 +626,7 @@ public sealed class AuthTests(WebApplicationFactory<Program> factory)
             using var response = await owner.PostAsJsonAsync(route, new
             {
                 unitId,
-                tenantId = tenant.Id,
+                tenantId,
                 startDate = start,
                 endDate = end,
                 monthlyRent = 325.50m,
@@ -605,7 +648,7 @@ public sealed class AuthTests(WebApplicationFactory<Program> factory)
 
         using var invalid = await owner.PostAsJsonAsync(route, new
         {
-            unitId, tenantId = tenant.Id, startDate = end, endDate = start, monthlyRent = 10.001m
+            unitId, tenantId, startDate = end, endDate = start, monthlyRent = 10.001m
         });
         Assert.Equal(HttpStatusCode.BadRequest, invalid.StatusCode);
 

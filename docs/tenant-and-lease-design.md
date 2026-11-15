@@ -21,3 +21,9 @@ Lease activation records a contractual state change. Actual occupancy dates and 
 POST /api/v1/organizations/{organizationId}/leases/{leaseId}/amend-rent adds a new rent version for an active lease. The effective date must be later than the latest version's effective date and within the contract. The expected version protects against overwriting a concurrent amendment. This operation retains the original term dates and deposit.
 
 POST /api/v1/organizations/{organizationId}/leases/{leaseId}/end records the inclusive actual end date. The date must fall inside the contract and cannot be later than today in Kosovo. Repeating the same end request succeeds. Prior versions remain available, and future billing must disregard terms that take effect after the actual end date. Replacement leases must start after that date to avoid overlapping the recorded contractual history.
+
+## Tenant contact API
+
+Owners and property managers can list tenant contacts at GET /api/v1/organizations/{organizationId}/tenants. Use search for a name substring and offset and limit for pagination. POST to the collection creates a contact. GET, PUT and DELETE on /tenants/{id} read, replace or archive it. The API validates the name and optional email and phone length, and requires an antiforgery token for writes.
+
+Archived contacts disappear from the contact API and cannot be selected for a new draft or activated draft. Existing leases and occupancy history retain their links to the archived contact. Archiving a contact does not end a lease.

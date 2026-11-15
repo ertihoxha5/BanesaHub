@@ -24,6 +24,7 @@ builder.Services.AddScoped<IPropertyInventory, PropertyInventory>();
 builder.Services.AddScoped<IBuildingInventory, BuildingInventory>();
 builder.Services.AddScoped<IUnitInventory, UnitInventory>();
 builder.Services.AddScoped<ILeaseLifecycle, LeaseLifecycle>();
+builder.Services.AddScoped<ITenantContacts, TenantContacts>();
 builder.Services.AddScoped<IOrganizationInvitations, OrganizationInvitations>();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddIdentityCore<IdentityUser<Guid>>(options =>
