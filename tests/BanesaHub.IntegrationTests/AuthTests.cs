@@ -225,6 +225,32 @@ public sealed class AuthTests(WebApplicationFactory<Program> factory)
         var inviteeMembership = await database.Memberships.SingleAsync(item => item.UserId == inviteeId);
         Assert.Equal(saved.Id, inviteeMembership.OrganizationId);
         Assert.Equal(BanesaHub.Domain.Organizations.MembershipRole.PropertyManager, inviteeMembership.Role);
+        using var secondOrg = await invitee.PostAsJsonAsync("/api/v1/organizations", new { name = "Other Rentals", slug = "other-rentals" });
+        Assert.Equal(HttpStatusCode.Created, secondOrg.StatusCode);
+        var second = await secondOrg.Content.ReadFromJsonAsync<CreatedOrganization>();
+        Assert.NotNull(second);
+        var inventoryRoute = $"/api/v1/organizations/{saved.Id}/properties";
+        using var property = await client.PostAsJsonAsync(inventoryRoute, new { name = "Draft property" });
+        Assert.Equal(HttpStatusCode.Created, property.StatusCode);
+        var detailRoute = property.Headers.Location!.PathAndQuery;
+        var propertyId = Guid.Parse(detailRoute.Split('/')[^1]);
+        using var managerAccess = await invitee.GetAsync(detailRoute);
+        Assert.Equal(HttpStatusCode.OK, managerAccess.StatusCode);
+        using var foreignAccess = await client.GetAsync($"/api/v1/organizations/{second.Id}/properties");
+        Assert.Equal(HttpStatusCode.NotFound, foreignAccess.StatusCode);
+        using var wrongParent = await invitee.PutAsJsonAsync(
+            $"/api/v1/organizations/{second.Id}/properties/{propertyId}", new { name = "Invalid move" });
+        Assert.Equal(HttpStatusCode.NotFound, wrongParent.StatusCode);
+        using var updated = await client.PutAsJsonAsync(detailRoute, new { name = "Updated property" });
+        Assert.Equal(HttpStatusCode.NoContent, updated.StatusCode);
+        using var archived = await client.DeleteAsync(detailRoute);
+        Assert.Equal(HttpStatusCode.NoContent, archived.StatusCode);
+        using var hidden = await client.GetAsync(detailRoute);
+        Assert.Equal(HttpStatusCode.NotFound, hidden.StatusCode);
+        var stored = await database.Properties.SingleAsync();
+        Assert.Equal("Updated property", stored.Name);
+        Assert.Equal(BanesaHub.Domain.Properties.PropertyStatus.Archived, stored.Status);
+
         var roleGrants = await database.AuditEvents.Where(item => item.OrganizationId == saved.Id).ToListAsync();
         Assert.Equal(2, roleGrants.Count);
         Assert.Contains(roleGrants, item => item.ActorId == user.Id && item.Action == "MembershipRoleGranted.Owner");
@@ -272,6 +298,8 @@ public sealed class AuthTests(WebApplicationFactory<Program> factory)
         client.DefaultRequestHeaders.Remove("X-CSRF-TOKEN");
         client.DefaultRequestHeaders.Add("X-CSRF-TOKEN", response!.RequestToken);
     }
+
+    private sealed record CreatedOrganization(Guid Id);
 
     private sealed record InvitationResponse(string Token);
 

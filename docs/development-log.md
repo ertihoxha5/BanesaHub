@@ -196,3 +196,12 @@
 
   git add -- src/BanesaHub.Domain/Properties src/BanesaHub.Infrastructure/Persistence/PropertyModelConfiguration.cs src/BanesaHub.Infrastructure/Persistence/BanesaHubDbContext.cs src/BanesaHub.Infrastructure/Persistence/Migrations docs/milestones.md docs/development-log.md
   git commit -m "feat(properties): add property inventory schema"
+
+## 2026-11-15 — Property API (M03.2a)
+
+- Added paginated list, detail, draft creation, metadata update and soft archive under /api/v1/organizations/{organizationId}/properties. Active owners and property managers have access within their organization.
+- Build passed without warnings or errors. Seven integration cases passed, including draft creation, scoped access, a rejected cross-organization update, and archived record retention. The opt-in SQL Server case was skipped.
+- Commit commands from the repository root
+
+  git add -- src/BanesaHub.API/Program.cs src/BanesaHub.API/Controllers/PropertiesController.cs src/BanesaHub.Application/Properties/IPropertyInventory.cs src/BanesaHub.Infrastructure/Persistence/PropertyInventory.cs tests/BanesaHub.IntegrationTests/AuthTests.cs docs/milestones.md docs/development-log.md
+  git commit -m "feat(properties): add scoped property endpoints"
