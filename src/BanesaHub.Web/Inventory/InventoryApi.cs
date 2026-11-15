@@ -33,6 +33,54 @@ public sealed class InventoryApi(HttpClient http)
         return (response.StatusCode, rows);
     }
 
+    public async Task<(HttpStatusCode Status, PropertyRow? Property)> FindPropertyAsync(
+        Guid organizationId, Guid propertyId, string session, CancellationToken ct)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get,
+            $"/api/v1/organizations/{organizationId}/properties/{propertyId}");
+        request.Headers.Add("Cookie", $"{SessionCookie}={session}");
+        using var response = await http.SendAsync(request, ct);
+        var property = response.StatusCode == HttpStatusCode.OK
+            ? await response.Content.ReadFromJsonAsync<PropertyRow>(ct)
+            : null;
+        return (response.StatusCode, property);
+    }
+
+    public async Task<HttpStatusCode> WritePropertyAsync(
+        Guid organizationId, Guid? propertyId, string session, HttpMethod method, PropertyInput? input, CancellationToken ct)
+    {
+        var tokenUri = new Uri(http.BaseAddress!, "/api/v1/auth/antiforgery");
+        using var tokenRequest = new HttpRequestMessage(HttpMethod.Get, tokenUri);
+        tokenRequest.Headers.Add("Cookie", $"{SessionCookie}={session}");
+        using var tokenResponse = await http.SendAsync(tokenRequest, ct);
+        if (!tokenResponse.IsSuccessStatusCode)
+        {
+            return tokenResponse.StatusCode;
+        }
+
+        var token = await tokenResponse.Content.ReadFromJsonAsync<AntiforgeryToken>(ct);
+        if (string.IsNullOrEmpty(token?.RequestToken))
+        {
+            return HttpStatusCode.BadGateway;
+        }
+
+        var cookies = new CookieContainer();
+        cookies.Add(tokenUri, new Cookie(SessionCookie, session, "/") { Secure = true });
+        CaptureCookies(tokenResponse, cookies);
+        var path = $"/api/v1/organizations/{organizationId}/properties";
+        var uri = new Uri(http.BaseAddress!, propertyId.HasValue ? $"{path}/{propertyId}" : path);
+        using var request = new HttpRequestMessage(method, uri);
+        request.Headers.Add("Cookie", cookies.GetCookieHeader(uri));
+        request.Headers.Add("X-CSRF-TOKEN", token.RequestToken);
+        if (input is not null)
+        {
+            request.Content = JsonContent.Create(input);
+        }
+
+        using var response = await http.SendAsync(request, ct);
+        return response.StatusCode;
+    }
+
     public async Task<(HttpStatusCode Status, string? Session)> SignInAsync(
         string email, string password, CancellationToken ct)
     {

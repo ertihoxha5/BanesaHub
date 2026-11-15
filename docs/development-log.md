@@ -232,3 +232,12 @@
 
   git add -- src/BanesaHub.API/Controllers/PropertiesController.cs src/BanesaHub.Application/Properties/IPropertyInventory.cs src/BanesaHub.Infrastructure/Persistence/PropertyInventory.cs src/BanesaHub.Web/Program.cs src/BanesaHub.Web/Controllers/InventoryController.cs src/BanesaHub.Web/Inventory/InventoryApi.cs src/BanesaHub.Web/Inventory/PropertyList.cs src/BanesaHub.Web/Views/Inventory/Index.cshtml src/BanesaHub.Web/wwwroot/css/inventory.css tests/BanesaHub.IntegrationTests/AuthTests.cs tests/BanesaHub.IntegrationTests/BanesaHub.IntegrationTests.csproj docs/milestones.md docs/setup-guide.md docs/development-log.md
   git commit -m "feat(properties): add filtered MVC property list"
+
+## 2026-11-15 — MVC property forms (M03.3b)
+
+- Added Albanian property creation, editing and archive confirmation from the property list. Address and category are optional, and new properties start as drafts.
+- Reused the API for authorization and writes. MVC validates its own form token and fetches an API token for the signed-in session before each write.
+- Restore and build passed with zero warnings and errors. Seven integration tests passed, including draft creation, validation, editing, archiving, missing-CSRF rejection and cross-organization write denial. The opt-in SQL Server test was skipped. Diff and scoped secret checks passed.
+
+  git add -- src/BanesaHub.Web/Controllers/PropertyFormsController.cs src/BanesaHub.Web/Inventory/PropertyForm.cs src/BanesaHub.Web/Inventory/InventoryApi.cs src/BanesaHub.Web/Views/Inventory/Index.cshtml src/BanesaHub.Web/Views/PropertyForms/Form.cshtml src/BanesaHub.Web/Views/Shared/_InventoryLayout.cshtml tests/BanesaHub.IntegrationTests/AuthTests.cs docs/milestones.md docs/development-log.md
+  git commit -m "feat(properties): add MVC property forms"

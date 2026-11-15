@@ -1,0 +1,43 @@
+@model BanesaHub.Web.Inventory.PropertyForm
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@{
+    Layout = "_InventoryLayout";
+    var action = Model.Archive ? "Archive" : Model.PropertyId.HasValue ? "Edit" : "Create";
+    var title = Model.Archive ? "Arkivo pronën" : Model.PropertyId.HasValue ? "Ndrysho pronën" : "Shto pronë";
+    ViewData["Title"] = title;
+}
+
+<h1>@title</h1>
+<form class="panel entry" method="post" asp-action="@action" asp-route-organizationId="@Model.OrganizationId"
+      asp-route-propertyId="@Model.PropertyId">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    @if (Model.Archive)
+    {
+        <p>Prona <strong>@Model.Input.Name</strong> dhe ndërtesat e njësitë e saj nuk do të shfaqen më në inventar.</p>
+    }
+    else
+    {
+        @if (!Model.PropertyId.HasValue)
+        {
+            <p>Prona ruhet si draft. Adresa dhe kategoria janë opsionale.</p>
+        }
+        <label class="form-label" asp-for="Input.Name">Emri i pronës</label>
+        <input class="form-control" asp-for="Input.Name" required maxlength="200">
+        <span class="text-danger" asp-validation-for="Input.Name"></span>
+
+        <label class="form-label mt-3" asp-for="Input.Address">Adresa</label>
+        <input class="form-control" asp-for="Input.Address" maxlength="300">
+        <span class="text-danger" asp-validation-for="Input.Address"></span>
+
+        <label class="form-label mt-3" asp-for="Input.Category">Kategoria</label>
+        <input class="form-control" asp-for="Input.Category" maxlength="100">
+        <span class="text-danger" asp-validation-for="Input.Category"></span>
+    }
+    <div class="d-flex flex-wrap gap-2 mt-4">
+        <button class="btn @(Model.Archive ? "btn-danger" : "btn-primary")" type="submit">
+            @(Model.Archive ? "Arkivo pronën" : "Ruaj")
+        </button>
+        <a class="btn btn-outline-secondary" asp-controller="Inventory" asp-action="Index"
+           asp-route-organizationId="@Model.OrganizationId">Anulo</a>
+    </div>
+</form>

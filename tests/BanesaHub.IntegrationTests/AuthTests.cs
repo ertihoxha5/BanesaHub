@@ -296,6 +296,48 @@ public sealed class AuthTests(WebApplicationFactory<Program> factory)
         using var foreignPage = await browser.GetAsync($"/organizations/{second.Id}/properties");
         Assert.Equal(HttpStatusCode.NotFound, foreignPage.StatusCode);
 
+        var createRoute = $"{pageRoute}/new";
+        var createHtml = await browser.GetStringAsync(createRoute);
+        Assert.Contains("Shto pron", createHtml);
+        var formToken = System.Text.RegularExpressions.Regex.Match(
+            createHtml, "name=\"__RequestVerificationToken\"[^>]*value=\"([^\"]+)\"").Groups[1].Value;
+        Assert.NotEmpty(formToken);
+
+        Task<HttpResponseMessage> SubmitProperty(string route, string name, bool includeToken = true)
+        {
+            var fields = new Dictionary<string, string> { ["Input.Name"] = name };
+            if (includeToken)
+            {
+                fields["__RequestVerificationToken"] = formToken;
+            }
+            return browser.PostAsync(route, new FormUrlEncodedContent(fields));
+        }
+
+        using var noCsrf = await SubmitProperty(createRoute, "Rejected", includeToken: false);
+        Assert.Equal(HttpStatusCode.BadRequest, noCsrf.StatusCode);
+        using var missingName = await SubmitProperty(createRoute, "");
+        Assert.Equal(HttpStatusCode.OK, missingName.StatusCode);
+        Assert.Contains("Shkruani emrin", await missingName.Content.ReadAsStringAsync());
+        using var webCreated = await SubmitProperty(createRoute, "MVC draft");
+        Assert.Equal(HttpStatusCode.Found, webCreated.StatusCode);
+        var mvcProperty = await database.Properties.AsNoTracking().SingleAsync(item => item.Name == "MVC draft");
+        Assert.Equal(BanesaHub.Domain.Properties.PropertyStatus.Draft, mvcProperty.Status);
+        Assert.Null(mvcProperty.Address);
+        var editRoute = $"{pageRoute}/{mvcProperty.Id}/edit";
+        Assert.Contains("MVC draft", await browser.GetStringAsync(editRoute));
+        using var foreignEdit = await SubmitProperty($"/organizations/{second.Id}/properties/{mvcProperty.Id}/edit", "Rejected");
+        Assert.Equal(HttpStatusCode.NotFound, foreignEdit.StatusCode);
+        using var webEdited = await SubmitProperty(editRoute, "MVC updated");
+        Assert.Equal(HttpStatusCode.Found, webEdited.StatusCode);
+        var confirmRoute = $"{pageRoute}/{mvcProperty.Id}/archive";
+        Assert.Contains("MVC updated", await browser.GetStringAsync(confirmRoute));
+        using var webArchived = await SubmitProperty(confirmRoute, "");
+        Assert.Equal(HttpStatusCode.Found, webArchived.StatusCode);
+        var archivedThroughMvc = await database.Properties.AsNoTracking().SingleAsync(item => item.Id == mvcProperty.Id);
+        Assert.Equal("MVC updated", archivedThroughMvc.Name);
+        Assert.Equal(BanesaHub.Domain.Properties.PropertyStatus.Archived, archivedThroughMvc.Status);
+        Assert.DoesNotContain("MVC updated", await browser.GetStringAsync(pageRoute));
+
         var buildingId = buildingRoute.Split('/')[^1];
         using var mismatchedBuilding = await client.GetAsync($"{otherProperty.Headers.Location!.PathAndQuery}/buildings/{buildingId}");
         Assert.Equal(HttpStatusCode.NotFound, mismatchedBuilding.StatusCode);

@@ -1,0 +1,30 @@
+@using BanesaHub.Web.Inventory
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+<!doctype html>
+<html lang="sq">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="referrer" content="no-referrer">
+    <title>@ViewData["Title"] | BanesaHub</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <link rel="stylesheet" href="~/css/inventory.css" asp-append-version="true">
+</head>
+<body>
+    <header class="inventory-header">
+        <div class="container inventory-bar">
+            <a class="brand" asp-controller="Inventory" asp-action="Home">Banesa<span>Hub</span></a>
+            @if (Context.Request.Cookies.ContainsKey(InventoryApi.SessionCookie))
+            {
+                <form method="post" asp-controller="Inventory" asp-action="SignOutInventory">
+                    <button class="btn btn-sm btn-outline-light" type="submit">Dilni</button>
+                </form>
+            }
+        </div>
+    </header>
+    <main class="container inventory-main">
+        @RenderBody()
+    </main>
+</body>
+</html>
