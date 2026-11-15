@@ -205,3 +205,12 @@
 
   git add -- src/BanesaHub.API/Program.cs src/BanesaHub.API/Controllers/PropertiesController.cs src/BanesaHub.Application/Properties/IPropertyInventory.cs src/BanesaHub.Infrastructure/Persistence/PropertyInventory.cs tests/BanesaHub.IntegrationTests/AuthTests.cs docs/milestones.md docs/development-log.md
   git commit -m "feat(properties): add scoped property endpoints"
+
+## 2026-11-15 — Building API (M03.2b)
+
+- Added paginated list, detail, creation, metadata update and soft archive under /api/v1/organizations/{organizationId}/properties/{propertyId}/buildings. Active owners and property managers can manage buildings within a visible property. Floor count is optional and must be positive when supplied.
+- Added controller and application contract, wired the EF Core implementation into API dependency injection, and shared the property management role check. No schema changes.
+- Restore and build passed with zero warnings and errors. Seven integration cases passed, including building validation, pagination, wrong property and organization rejection, archived record retention, and hiding buildings when their property is archived. The opt-in SQL Server case was skipped. Diff and scoped secret checks passed.
+
+  git add -- src/BanesaHub.API/Program.cs src/BanesaHub.API/Controllers/BuildingsController.cs src/BanesaHub.Application/Properties/IBuildingInventory.cs src/BanesaHub.Infrastructure/Persistence/BuildingInventory.cs src/BanesaHub.Infrastructure/Persistence/PropertyInventory.cs tests/BanesaHub.IntegrationTests/AuthTests.cs docs/milestones.md docs/development-log.md
+  git commit -m "feat(properties): add scoped building endpoints"

@@ -243,11 +243,48 @@ public sealed class AuthTests(WebApplicationFactory<Program> factory)
         Assert.Equal(HttpStatusCode.NotFound, wrongParent.StatusCode);
         using var updated = await client.PutAsJsonAsync(detailRoute, new { name = "Updated property" });
         Assert.Equal(HttpStatusCode.NoContent, updated.StatusCode);
+        var buildingsRoute = $"{detailRoute}/buildings";
+        using var invalidBuilding = await client.PostAsJsonAsync(buildingsRoute, new { name = "Invalid", floorCount = 0 });
+        Assert.Equal(HttpStatusCode.BadRequest, invalidBuilding.StatusCode);
+        using var addedBuilding = await invitee.PostAsJsonAsync(buildingsRoute, new { name = " North Wing ", floorCount = 2 });
+        Assert.Equal(HttpStatusCode.Created, addedBuilding.StatusCode);
+        var buildingRoute = addedBuilding.Headers.Location!.PathAndQuery;
+        using var buildingDetail = await client.GetAsync(buildingRoute);
+        Assert.Equal(HttpStatusCode.OK, buildingDetail.StatusCode);
+        using var buildingList = await client.GetAsync($"{buildingsRoute}?offset=1&limit=1");
+        Assert.Equal(HttpStatusCode.OK, buildingList.StatusCode);
+        Assert.Empty((await buildingList.Content.ReadFromJsonAsync<System.Text.Json.JsonElement[]>())!);
+
+        using var otherProperty = await client.PostAsJsonAsync(inventoryRoute, new { name = "Other property" });
+        Assert.Equal(HttpStatusCode.Created, otherProperty.StatusCode);
+        var buildingId = buildingRoute.Split('/')[^1];
+        using var mismatchedBuilding = await client.GetAsync($"{otherProperty.Headers.Location!.PathAndQuery}/buildings/{buildingId}");
+        Assert.Equal(HttpStatusCode.NotFound, mismatchedBuilding.StatusCode);
+        using var foreignBuilding = await invitee.GetAsync($"/api/v1/organizations/{second.Id}/properties/{propertyId}/buildings/{buildingId}");
+        Assert.Equal(HttpStatusCode.NotFound, foreignBuilding.StatusCode);
+
+        using var changedBuilding = await client.PutAsJsonAsync(buildingRoute, new { name = "North Hall", floorCount = 3 });
+        Assert.Equal(HttpStatusCode.NoContent, changedBuilding.StatusCode);
+        using var archivedBuilding = await client.DeleteAsync(buildingRoute);
+        Assert.Equal(HttpStatusCode.NoContent, archivedBuilding.StatusCode);
+        using var hiddenBuilding = await client.GetAsync(buildingRoute);
+        Assert.Equal(HttpStatusCode.NotFound, hiddenBuilding.StatusCode);
+        var storedBuilding = await database.Buildings.SingleAsync(item => item.Id == Guid.Parse(buildingId));
+        Assert.Equal("North Hall", storedBuilding.Name);
+        Assert.Equal(3, storedBuilding.FloorCount);
+        Assert.True(storedBuilding.IsArchived);
+
+        using var activeBuilding = await client.PostAsJsonAsync(buildingsRoute, new { name = "South Wing" });
+        Assert.Equal(HttpStatusCode.Created, activeBuilding.StatusCode);
         using var archived = await client.DeleteAsync(detailRoute);
         Assert.Equal(HttpStatusCode.NoContent, archived.StatusCode);
         using var hidden = await client.GetAsync(detailRoute);
         Assert.Equal(HttpStatusCode.NotFound, hidden.StatusCode);
-        var stored = await database.Properties.SingleAsync();
+        using var hiddenByParent = await client.GetAsync(activeBuilding.Headers.Location!.PathAndQuery);
+        Assert.Equal(HttpStatusCode.NotFound, hiddenByParent.StatusCode);
+        using var rejectedByParent = await client.PostAsJsonAsync(buildingsRoute, new { name = "Blocked" });
+        Assert.Equal(HttpStatusCode.NotFound, rejectedByParent.StatusCode);
+        var stored = await database.Properties.SingleAsync(item => item.Id == propertyId);
         Assert.Equal("Updated property", stored.Name);
         Assert.Equal(BanesaHub.Domain.Properties.PropertyStatus.Archived, stored.Status);
 

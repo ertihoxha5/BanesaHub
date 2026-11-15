@@ -14,7 +14,7 @@ public sealed class PropertyInventory(BanesaHubDbContext database) : IPropertyIn
     public async Task<IReadOnlyList<PropertyDetails>?> ListAsync(
         Guid organizationId, Guid actorId, int offset, int limit, CancellationToken ct)
     {
-        if (!await CanManage(organizationId, actorId, ct))
+        if (!await CanManage(database, organizationId, actorId, ct))
         {
             return null;
         }
@@ -25,7 +25,7 @@ public sealed class PropertyInventory(BanesaHubDbContext database) : IPropertyIn
 
     public async Task<PropertyDetails?> FindAsync(Guid organizationId, Guid actorId, Guid id, CancellationToken ct)
     {
-        if (!await CanManage(organizationId, actorId, ct))
+        if (!await CanManage(database, organizationId, actorId, ct))
         {
             return null;
         }
@@ -36,7 +36,7 @@ public sealed class PropertyInventory(BanesaHubDbContext database) : IPropertyIn
     public async Task<PropertyDetails?> CreateAsync(
         Guid organizationId, Guid actorId, PropertyInput input, CancellationToken ct)
     {
-        if (!await CanManage(organizationId, actorId, ct))
+        if (!await CanManage(database, organizationId, actorId, ct))
         {
             return null;
         }
@@ -87,11 +87,11 @@ public sealed class PropertyInventory(BanesaHubDbContext database) : IPropertyIn
         database.Properties.Where(item => item.OrganizationId == organizationId && item.Status != PropertyStatus.Archived);
 
     private async Task<Property?> FindEditable(Guid organizationId, Guid actorId, Guid id, CancellationToken ct) =>
-        await CanManage(organizationId, actorId, ct)
+        await CanManage(database, organizationId, actorId, ct)
             ? await Visible(organizationId).SingleOrDefaultAsync(item => item.Id == id, ct)
             : null;
 
-    private Task<bool> CanManage(Guid organizationId, Guid actorId, CancellationToken ct) =>
+    internal static Task<bool> CanManage(BanesaHubDbContext database, Guid organizationId, Guid actorId, CancellationToken ct) =>
         OrganizationDirectory.ActiveMemberships(database, actorId).AnyAsync(member =>
             member.OrganizationId == organizationId &&
             (member.Role == MembershipRole.Owner || member.Role == MembershipRole.PropertyManager) &&
