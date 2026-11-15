@@ -10,8 +10,20 @@ namespace BanesaHub.API.Controllers;
 [Authorize]
 [AutoValidateAntiforgeryToken]
 [Route("api/v1/organizations")]
-public sealed class OrganizationsController(IOrganizationRegistration registration) : ControllerBase
+public sealed class OrganizationsController(IOrganizationRegistration registration, IOrganizationDirectory directory) : ControllerBase
 {
+    [HttpGet("{organizationId:guid}")]
+    public async Task<IActionResult> Get(Guid organizationId, CancellationToken cancellationToken)
+    {
+        if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
+        {
+            return Unauthorized();
+        }
+
+        var organization = await directory.FindForMemberAsync(organizationId, userId, cancellationToken);
+        return organization is null ? NotFound() : Ok(organization);
+    }
+
     [HttpPost]
     public async Task<IActionResult> Create(CreateOrganizationRequest request, CancellationToken cancellationToken)
     {

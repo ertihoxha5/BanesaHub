@@ -17,6 +17,7 @@ builder.Logging.AddJsonConsole(options => options.IncludeScopes = true);
 builder.Services.AddControllersWithViews();
 builder.Services.AddBanesaHubPersistence(builder.Configuration);
 builder.Services.AddScoped<IOrganizationRegistration, OrganizationRegistration>();
+builder.Services.AddScoped<IOrganizationDirectory, OrganizationDirectory>();
 builder.Services.AddScoped<IOrganizationInvitations, OrganizationInvitations>();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddIdentityCore<IdentityUser<Guid>>(options =>

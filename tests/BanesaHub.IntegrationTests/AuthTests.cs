@@ -144,6 +144,10 @@ public sealed class AuthTests(WebApplicationFactory<Program> factory)
         Assert.Equal(user.Id, membership.UserId);
         Assert.Equal(BanesaHub.Domain.Organizations.MembershipRole.Owner, membership.Role);
 
+        var organizationRoute = $"/api/v1/organizations/{saved.Id}";
+        using var ownerAccess = await client.GetAsync(organizationRoute);
+        Assert.Equal(HttpStatusCode.OK, ownerAccess.StatusCode);
+
         var inviteRoute = $"/api/v1/organizations/{saved.Id}/invitations";
         const string inviteeEmail = "invitee@example.test";
         using var issue = await client.PostAsJsonAsync(inviteRoute, new { email = inviteeEmail, role = 2 });
@@ -168,10 +172,14 @@ public sealed class AuthTests(WebApplicationFactory<Program> factory)
         using var inviteeLogin = await invitee.PostAsJsonAsync("/api/v1/auth/login", inviteeCredentials);
         Assert.Equal(HttpStatusCode.NoContent, inviteeLogin.StatusCode);
         await RefreshToken(invitee);
+        using var outsiderAccess = await invitee.GetAsync(organizationRoute);
+        Assert.Equal(HttpStatusCode.NotFound, outsiderAccess.StatusCode);
         using var unauthorizedIssue = await invitee.PostAsJsonAsync(inviteRoute, new { email = inviteeEmail, role = 2 });
         Assert.Equal(HttpStatusCode.NotFound, unauthorizedIssue.StatusCode);
         using var accepted = await invitee.PostAsJsonAsync(acceptRoute, acceptance);
         Assert.Equal(HttpStatusCode.NoContent, accepted.StatusCode);
+        using var memberAccess = await invitee.GetAsync(organizationRoute);
+        Assert.Equal(HttpStatusCode.OK, memberAccess.StatusCode);
         using var replay = await invitee.PostAsJsonAsync(acceptRoute, acceptance);
         Assert.Equal(HttpStatusCode.BadRequest, replay.StatusCode);
         var inviteeId = await database.Users.Where(item => item.Email == inviteeEmail).Select(item => item.Id).SingleAsync();

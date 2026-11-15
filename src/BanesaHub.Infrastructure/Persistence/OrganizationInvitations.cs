@@ -19,9 +19,8 @@ public sealed class OrganizationInvitations(BanesaHubDbContext database, TimePro
             throw new ArgumentOutOfRangeException(nameof(role));
         }
 
-        var canInvite = await database.Memberships.AnyAsync(member =>
-            member.OrganizationId == organizationId && member.UserId == ownerId &&
-            member.IsActive && member.Role == MembershipRole.Owner &&
+        var canInvite = await OrganizationDirectory.ActiveMemberships(database, ownerId).AnyAsync(member =>
+            member.OrganizationId == organizationId && member.Role == MembershipRole.Owner &&
             database.Organizations.Any(org => org.Id == organizationId && org.IsActive),
             cancellationToken);
         if (!canInvite)

@@ -154,3 +154,11 @@
 
   git add -- src/BanesaHub.API/Program.cs src/BanesaHub.API/Controllers/OrganizationInvitationsController.cs src/BanesaHub.Application/Organizations/IOrganizationInvitations.cs src/BanesaHub.Domain/Organizations/OrganizationInvitation.cs src/BanesaHub.Infrastructure/Persistence/BanesaHubDbContext.cs src/BanesaHub.Infrastructure/Persistence/OrganizationInvitations.cs src/BanesaHub.Infrastructure/Persistence/Migrations tests/BanesaHub.IntegrationTests/AuthTests.cs docs/milestones.md docs/development-log.md
   git commit -m "feat(organizations): add membership invitations"
+
+## 2026-11-15 — Organization resource authorization (M02.3)
+
+- Added authenticated GET /api/v1/organizations/{organizationId}. The query requires active organization and membership records for the signed-in user. Outsiders receive 404. Invitation issuance uses the shared active-membership filter and requires the Owner role.
+- Build passed without warnings or errors. All seven integration cases passed, including access before and after accepting an invitation. SQL Server isolation verification remains scheduled for M02.5.
+
+  git add -- src/BanesaHub.API/Program.cs src/BanesaHub.API/Controllers/OrganizationsController.cs src/BanesaHub.Application/Organizations/IOrganizationDirectory.cs src/BanesaHub.Infrastructure/Persistence/OrganizationDirectory.cs src/BanesaHub.Infrastructure/Persistence/OrganizationInvitations.cs tests/BanesaHub.IntegrationTests/AuthTests.cs docs/milestones.md docs/development-log.md
+  git commit -m "feat(organizations): scope access to active memberships"
