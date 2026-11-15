@@ -1,0 +1,40 @@
+@model BanesaHub.Web.Inventory.UnitForm
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@{
+    Layout = "_InventoryLayout";
+    var action = Model.Archive ? "Archive" : Model.UnitId.HasValue ? "Edit" : "Create";
+    var title = Model.Archive ? "Arkivo njësinë" : Model.UnitId.HasValue ? "Ndrysho njësinë" : "Shto njësi";
+    ViewData["Title"] = title;
+}
+
+<h1>@title</h1>
+<form class="panel entry" method="post" asp-action="@action" asp-route-organizationId="@Model.OrganizationId"
+      asp-route-propertyId="@Model.PropertyId" asp-route-buildingId="@Model.BuildingId" asp-route-unitId="@Model.UnitId">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    @if (Model.Archive)
+    {
+        <p>Njësia <strong>@Model.Input.Number</strong> nuk do të shfaqet më në inventar. Numri i saj mbetet i rezervuar.</p>
+    }
+    else
+    {
+        <label class="form-label" asp-for="Input.Number">Numri i njësisë</label>
+        <input class="form-control" asp-for="Input.Number" required maxlength="50">
+        <span class="text-danger" asp-validation-for="Input.Number"></span>
+
+        <label class="form-label mt-3" asp-for="Input.Area">Sipërfaqja në m² (opsionale)</label>
+        <input class="form-control" asp-for="Input.Area" inputmode="decimal" maxlength="13">
+        <span class="text-danger" asp-validation-for="Input.Area"></span>
+
+        <label class="form-label mt-3" asp-for="Input.Status">Gjendja</label>
+        <select class="form-select" asp-for="Input.Status"
+                asp-items="Html.GetEnumSelectList<BanesaHub.Web.Inventory.UnitStatus>()"></select>
+        <span class="text-danger" asp-validation-for="Input.Status"></span>
+    }
+    <div class="d-flex flex-wrap gap-2 mt-4">
+        <button class="btn @(Model.Archive ? "btn-danger" : "btn-primary")" type="submit">
+            @(Model.Archive ? "Arkivo njësinë" : "Ruaj")
+        </button>
+        <a class="btn btn-outline-secondary" asp-action="Index" asp-route-organizationId="@Model.OrganizationId"
+           asp-route-propertyId="@Model.PropertyId" asp-route-buildingId="@Model.BuildingId">Anulo</a>
+    </div>
+</form>

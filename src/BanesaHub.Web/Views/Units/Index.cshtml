@@ -1,0 +1,68 @@
+@model BanesaHub.Web.Inventory.UnitList
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@{
+    Layout = "_InventoryLayout";
+    ViewData["Title"] = "Njësitë";
+    var albanian = System.Globalization.CultureInfo.GetCultureInfo("sq-XK");
+    var labels = Html.GetEnumSelectList<BanesaHub.Web.Inventory.UnitStatus>()
+        .ToDictionary(item => (BanesaHub.Web.Inventory.UnitStatus)int.Parse(item.Value!), item => item.Text);
+}
+
+<a asp-controller="Buildings" asp-action="Index" asp-route-organizationId="@Model.OrganizationId" asp-route-propertyId="@Model.PropertyId" >Kthehu te ndërtesat</a>
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mt-3">
+    <h1>Njësitë</h1>
+    <a class="btn btn-primary" asp-action="Create" asp-route-organizationId="@Model.OrganizationId"
+       asp-route-propertyId="@Model.PropertyId" asp-route-buildingId="@Model.BuildingId">Shto njësi</a>
+</div>
+<p>@Model.BuildingName</p>
+
+@if (Model.Rows.Length == 0)
+{
+    <p class="panel empty-state">Nuk u gjet asnjë njësi.</p>
+}
+else
+{
+    <div class="panel table-responsive inventory-table">
+        <table class="table align-middle mb-0">
+            <caption class="visually-hidden">Lista e njësive</caption>
+            <thead><tr><th scope="col">Numri</th><th scope="col">Sipërfaqja</th><th scope="col">Gjendja</th><th scope="col">Veprimet</th></tr></thead>
+            <tbody>
+            @foreach (var item in Model.Rows)
+            {
+                <tr>
+                    <th scope="row">@item.Number</th>
+                    <td>@(item.Area is decimal area ? $"{area.ToString("0.##", albanian)} m²" : "—")</td>
+                    <td>@labels[item.Status]</td>
+                    <td>
+                        <div class="d-flex flex-wrap gap-2">
+                            <a class="btn btn-sm btn-outline-primary" asp-action="Edit" asp-route-unitId="@item.Id"
+                               asp-route-organizationId="@Model.OrganizationId" asp-route-propertyId="@Model.PropertyId" asp-route-buildingId="@Model.BuildingId"
+                               aria-label="Ndrysho @item.Number">Ndrysho</a>
+                            <a class="btn btn-sm btn-outline-secondary" asp-action="Archive" asp-route-unitId="@item.Id"
+                               asp-route-organizationId="@Model.OrganizationId" asp-route-propertyId="@Model.PropertyId" asp-route-buildingId="@Model.BuildingId"
+                               aria-label="Arkivo @item.Number">Arkivo</a>
+                        </div>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+}
+
+@if (Model.Page > 1 || Model.HasNext)
+{
+    <nav class="inventory-pagination" aria-label="Faqet e njësive">
+        @if (Model.Page > 1)
+        {
+            <a class="btn btn-outline-secondary" asp-action="Index" asp-route-organizationId="@Model.OrganizationId"
+               asp-route-propertyId="@Model.PropertyId" asp-route-buildingId="@Model.BuildingId" asp-route-page="@(Model.Page - 1)">Para</a>
+        }
+        <span>Faqja @Model.Page</span>
+        @if (Model.HasNext)
+        {
+            <a class="btn btn-outline-secondary" asp-action="Index" asp-route-organizationId="@Model.OrganizationId"
+               asp-route-propertyId="@Model.PropertyId" asp-route-buildingId="@Model.BuildingId" asp-route-page="@(Model.Page + 1)">Tjetra</a>
+        }
+    </nav>
+}

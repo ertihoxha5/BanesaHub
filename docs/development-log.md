@@ -250,3 +250,12 @@
 
   git add -- src/BanesaHub.Web/Controllers/BuildingsController.cs src/BanesaHub.Web/Inventory/BuildingModels.cs src/BanesaHub.Web/Inventory/InventoryApi.cs src/BanesaHub.Web/Views/Buildings/Form.cshtml src/BanesaHub.Web/Views/Buildings/Index.cshtml src/BanesaHub.Web/Views/Inventory/Index.cshtml tests/BanesaHub.IntegrationTests/AuthTests.cs docs/milestones.md docs/development-log.md
   git commit -m "feat(properties): add MVC building management"
+
+## 2026-11-15 — MVC unit list and forms (M03.3d)
+
+- Linked each building to its paginated Albanian unit list. Added forms for creating, editing and confirming archive of units.
+- Displayed Albanian occupancy labels and formatted area for Kosovo Albanian. Area accepts a decimal comma or point. Duplicate numbers display an error on the form.
+- Restore and build passed with zero warnings and errors. Seven integration tests passed, covering navigation, paging, localized area, duplicate feedback, create/edit/archive, and wrong-building write rejection. The opt-in SQL Server test was skipped. Diff and scoped secret checks passed.
+
+  git add -- src/BanesaHub.Web/Controllers/UnitsController.cs src/BanesaHub.Web/Inventory/UnitModels.cs src/BanesaHub.Web/Inventory/InventoryApi.cs src/BanesaHub.Web/Views/Units/Form.cshtml src/BanesaHub.Web/Views/Units/Index.cshtml src/BanesaHub.Web/Views/Buildings/Index.cshtml tests/BanesaHub.IntegrationTests/AuthTests.cs docs/milestones.md docs/development-log.md
+  git commit -m "feat(properties): add MVC unit management"

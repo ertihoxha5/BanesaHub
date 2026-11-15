@@ -64,18 +64,40 @@ public sealed class InventoryApi(HttpClient http)
         Guid organizationId, Guid propertyId, string session, int offset, int limit, CancellationToken ct)
     {
         var path = FormattableString.Invariant($"{BuildingsPath(organizationId, propertyId)}?offset={offset}&limit={limit}");
-        var (status, rows) = await ReadBuildingDataAsync<BuildingRow[]>(path, session, ct);
+        var (status, rows) = await ReadAsync<BuildingRow[]>(path, session, ct);
         return (status, rows ?? []);
     }
 
     public Task<(HttpStatusCode Status, BuildingRow? Row)> FindBuildingAsync(
         Guid organizationId, Guid propertyId, Guid buildingId, string session, CancellationToken ct) =>
-        ReadBuildingDataAsync<BuildingRow>($"{BuildingsPath(organizationId, propertyId)}/{buildingId}", session, ct);
+        ReadAsync<BuildingRow>($"{BuildingsPath(organizationId, propertyId)}/{buildingId}", session, ct);
+
+    public async Task<(HttpStatusCode Status, UnitRow[] Rows)> ListUnitsAsync(
+        Guid organizationId, Guid propertyId, Guid buildingId, string session, int offset, int limit, CancellationToken ct)
+    {
+        var path = FormattableString.Invariant($"{UnitsPath(organizationId, propertyId, buildingId)}?offset={offset}&limit={limit}");
+        var (status, rows) = await ReadAsync<UnitRow[]>(path, session, ct);
+        return (status, rows ?? []);
+    }
+
+    public Task<(HttpStatusCode Status, UnitRow? Row)> FindUnitAsync(
+        Guid organizationId, Guid propertyId, Guid buildingId, Guid unitId, string session, CancellationToken ct) =>
+        ReadAsync<UnitRow>($"{UnitsPath(organizationId, propertyId, buildingId)}/{unitId}", session, ct);
+
+    public Task<HttpStatusCode> WriteUnitAsync(UnitForm form, string session, HttpMethod method, CancellationToken ct)
+    {
+        var path = UnitsPath(form.OrganizationId, form.PropertyId, form.BuildingId);
+        return WriteAsync(form.UnitId is Guid id ? $"{path}/{id}" : path, session, method,
+            form.Archive ? null : new { form.Input.Number, Area = form.Input.ParseArea(), form.Input.Status }, ct);
+    }
+
+    private static string UnitsPath(Guid organizationId, Guid propertyId, Guid buildingId) =>
+        $"{BuildingsPath(organizationId, propertyId)}/{buildingId}/units";
 
     private static string BuildingsPath(Guid organizationId, Guid propertyId) =>
         $"/api/v1/organizations/{organizationId}/properties/{propertyId}/buildings";
 
-    private async Task<(HttpStatusCode Status, T? Data)> ReadBuildingDataAsync<T>(
+    private async Task<(HttpStatusCode Status, T? Data)> ReadAsync<T>(
         string path, string session, CancellationToken ct) where T : class
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, path);

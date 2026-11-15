@@ -425,6 +425,51 @@ public sealed class AuthTests(WebApplicationFactory<Program> factory)
         var page = Assert.Single((await unitPage.Content.ReadFromJsonAsync<System.Text.Json.JsonElement[]>())!);
         Assert.Equal("A02", page.GetProperty("number").GetString());
 
+        var webUnits = $"{webBuildings}/{buildingId}/units";
+        Assert.Contains($"href=\"{webUnits}\"", await browser.GetStringAsync(webBuildings));
+        var unitPageHtml = await browser.GetStringAsync(webUnits);
+        Assert.Contains("46,75", unitPageHtml);
+        Assert.Contains("E padisponueshme", unitPageHtml);
+        Assert.DoesNotContain("A02", await browser.GetStringAsync($"{webUnits}?page=2"));
+        var newUnit = $"{webUnits}/new";
+        Assert.Contains($"action=\"{newUnit}\"", await browser.GetStringAsync(newUnit));
+
+        async Task<HttpResponseMessage> SubmitUnit(string url, string number, string area)
+        {
+            using var form = new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["Input.Number"] = number,
+                ["Input.Area"] = area,
+                ["Input.Status"] = "2",
+                ["__RequestVerificationToken"] = formToken
+            });
+            return await browser.PostAsync(url, form);
+        }
+
+        using var invalidUnitArea = await SubmitUnit(newUnit, "MVC-01", "25,555");
+        Assert.Equal(HttpStatusCode.OK, invalidUnitArea.StatusCode);
+        Assert.Contains("pas presjes", await invalidUnitArea.Content.ReadAsStringAsync());
+        using var webDuplicate = await SubmitUnit(newUnit, "A01", "25,55");
+        Assert.Equal(HttpStatusCode.Conflict, webDuplicate.StatusCode);
+        Assert.Contains("në përdorim", WebUtility.HtmlDecode(await webDuplicate.Content.ReadAsStringAsync()));
+        using var webUnitCreated = await SubmitUnit(newUnit, "MVC-01", "25,55");
+        Assert.Equal(HttpStatusCode.Found, webUnitCreated.StatusCode);
+        var mvcUnit = await database.Units.AsNoTracking().SingleAsync(item => item.Number == "MVC-01");
+        Assert.Equal(25.55m, mvcUnit.Area);
+        Assert.Equal(BanesaHub.Domain.Properties.UnitStatus.Occupied, mvcUnit.Status);
+        var wrongUnitRoute = $"{webBuildings}/{activeBuilding.Headers.Location!.AbsolutePath.Split('/')[^1]}/units/{mvcUnit.Id}/edit";
+        using var wrongUnitEdit = await SubmitUnit(wrongUnitRoute, "Rejected", "");
+        Assert.Equal(HttpStatusCode.NotFound, wrongUnitEdit.StatusCode);
+        var editUnit = $"{webUnits}/{mvcUnit.Id}/edit";
+        Assert.Contains("25,55", await browser.GetStringAsync(editUnit));
+        using var webUnitUpdated = await SubmitUnit(editUnit, "MVC-02", "26.5");
+        Assert.Equal(HttpStatusCode.Found, webUnitUpdated.StatusCode);
+        var archiveUnit = $"{webUnits}/{mvcUnit.Id}/archive";
+        Assert.Contains("MVC-02", await browser.GetStringAsync(archiveUnit));
+        using var webUnitArchived = await SubmitUnit(archiveUnit, "", "");
+        Assert.Equal(HttpStatusCode.Found, webUnitArchived.StatusCode);
+        Assert.DoesNotContain("MVC-02", await browser.GetStringAsync(webUnits));
+
         using var archivedUnit = await client.DeleteAsync(unitRoute);
         Assert.Equal(HttpStatusCode.NoContent, archivedUnit.StatusCode);
         using var hiddenUnit = await client.GetAsync(unitRoute);
