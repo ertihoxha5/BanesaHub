@@ -75,3 +75,18 @@ dotnet run --project src/BanesaHub.API --no-launch-profile -- seed-development
 ```
 
 The command exits after creating `owner-a@example.test` for `demo-a` and `owner-b@example.test` for `demo-b`. A repeat run preserves intact fixtures and their passwords. If the sample emails or slugs already belong to other records, use a separate development database. Start the API normally to sign in through its account endpoints.
+
+## Run the SQL Server isolation test
+
+Use a development SQL Server login that can create and drop databases. The test replaces the connection's database name with a unique BanesaHub_Test name, applies migrations and removes that database after the test.
+
+```powershell
+$env:BANESAHUB_TEST_SQLSERVER = 'Server=localhost;Integrated Security=True;Encrypt=True;TrustServerCertificate=True;Connect Timeout=5'
+try {
+    dotnet test tests/BanesaHub.IntegrationTests --filter FullyQualifiedName~OrganizationIsolationOnSqlServer
+} finally {
+    Remove-Item Env:BANESAHUB_TEST_SQLSERVER
+}
+```
+
+Expect one passing test. To verify the development seed separately, run the seed command twice against a clean, migrated development database. Confirm that demo-a and demo-b each have one owner membership and their owner accounts can still sign in after the second run.

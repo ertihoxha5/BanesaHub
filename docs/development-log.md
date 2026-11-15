@@ -179,3 +179,11 @@
 
   git add -- src/BanesaHub.API/Program.cs src/BanesaHub.API/Auth/DevelopmentSeed.cs docs/setup-guide.md docs/milestones.md docs/development-log.md
   git commit -m "feat(dev): add opt-in organization seed data"
+
+## 2026-11-15 — SQL Server isolation verification (M02.5)
+
+- Added an opt-in SQL Server integration case for the organization and invitation flow. It migrates a uniquely named test database and removes it after the run.
+- Build passed with zero warnings and errors. Seven integration cases passed and the SQL Server case skipped. The SQL connection preflight failed with an SSPI authentication error. Live isolation and seed verification remain open.
+
+  git add -- tests/BanesaHub.IntegrationTests/AuthTests.cs tests/BanesaHub.IntegrationTests/SqlServerFactAttribute.cs docs/setup-guide.md docs/milestones.md docs/development-log.md
+  git commit -m "test(organizations): add SQL Server isolation coverage"

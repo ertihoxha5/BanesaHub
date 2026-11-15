@@ -1,3 +1,4 @@
+using Microsoft.Data.SqlClient;
 using BanesaHub.API.Auth;
 using Microsoft.AspNetCore.DataProtection;
 using System.Net;
@@ -114,6 +115,35 @@ public sealed class AuthTests(WebApplicationFactory<Program> factory)
     public async Task OrganizationCreationAndInvitationsEnforceMembershipRules()
     {
         using var host = CreateHost();
+        await VerifyOrganizationFlow(host);
+    }
+
+    [SqlServerFact]
+    public async Task OrganizationIsolationOnSqlServer()
+    {
+        var source = Environment.GetEnvironmentVariable(SqlServerFactAttribute.ConnectionVariable);
+        var connection = new SqlConnectionStringBuilder(source)
+        {
+            InitialCatalog = $"BanesaHub_Test_{Guid.NewGuid():N}",
+            Pooling = false
+        };
+        using var host = CreateHost(sqlServer: connection.ConnectionString);
+        await using var scope = host.Services.CreateAsyncScope();
+        var database = scope.ServiceProvider.GetRequiredService<BanesaHubDbContext>();
+
+        try
+        {
+            await database.Database.MigrateAsync();
+            await VerifyOrganizationFlow(host);
+        }
+        finally
+        {
+            await database.Database.EnsureDeletedAsync();
+        }
+    }
+
+    private static async Task VerifyOrganizationFlow(WebApplicationFactory<Program> host)
+    {
         using var client = host.CreateClient(new WebApplicationFactoryClientOptions
         {
             BaseAddress = new Uri("https://localhost"),
@@ -201,16 +231,20 @@ public sealed class AuthTests(WebApplicationFactory<Program> factory)
         Assert.Contains(roleGrants, item => item.ActorId == inviteeId && item.Action == "MembershipRoleGranted.PropertyManager");
     }
 
-    private WebApplicationFactory<Program> CreateHost(IPasswordResetDelivery? delivery = null)
+    private WebApplicationFactory<Program> CreateHost(IPasswordResetDelivery? delivery = null, string? sqlServer = null)
     {
         var databaseName = Guid.NewGuid().ToString();
         return factory.WithWebHostBuilder(builder => builder.ConfigureServices(services =>
         {
             services.AddSingleton<IDataProtectionProvider, EphemeralDataProtectionProvider>();
             services.RemoveAll<DbContextOptions<BanesaHubDbContext>>();
-            services.AddScoped(_ => new DbContextOptionsBuilder<BanesaHubDbContext>()
-                .UseInMemoryDatabase(databaseName)
-                .Options);
+            services.AddScoped(_ =>
+            {
+                var options = new DbContextOptionsBuilder<BanesaHubDbContext>();
+                return sqlServer is null
+                    ? options.UseInMemoryDatabase(databaseName).Options
+                    : options.UseSqlServer(sqlServer).Options;
+            });
             if (delivery is not null)
             {
                 services.AddSingleton(delivery);
