@@ -145,3 +145,12 @@
 
   git add -- src/BanesaHub.API/Program.cs src/BanesaHub.API/Controllers/OrganizationsController.cs src/BanesaHub.Application/Organizations/IOrganizationRegistration.cs src/BanesaHub.Infrastructure/Persistence/OrganizationRegistration.cs tests/BanesaHub.IntegrationTests/AuthTests.cs docs/milestones.md docs/development-log.md
   git commit -m "feat(organizations): create organizations with owner membership"
+
+## 2026-11-14 — Organization invitations (M02.2c)
+
+- Active owners can issue invitations through POST /api/v1/organizations/{organizationId}/invitations. Share the returned token privately with the recipient. The token expires after 48 hours. Only its hash is stored. Invitations grant one of the four non-owner membership roles.
+- The signed-in recipient submits the token to POST /api/v1/organizations/invitations/accept. The account email must match. Acceptance and membership are persisted in one save. Both endpoints require antiforgery validation.
+- Build and all seven integration cases passed. EF found no pending model changes. Live SQL Server migration and concurrent acceptance remain unverified.
+
+  git add -- src/BanesaHub.API/Program.cs src/BanesaHub.API/Controllers/OrganizationInvitationsController.cs src/BanesaHub.Application/Organizations/IOrganizationInvitations.cs src/BanesaHub.Domain/Organizations/OrganizationInvitation.cs src/BanesaHub.Infrastructure/Persistence/BanesaHubDbContext.cs src/BanesaHub.Infrastructure/Persistence/OrganizationInvitations.cs src/BanesaHub.Infrastructure/Persistence/Migrations tests/BanesaHub.IntegrationTests/AuthTests.cs docs/milestones.md docs/development-log.md
+  git commit -m "feat(organizations): add membership invitations"

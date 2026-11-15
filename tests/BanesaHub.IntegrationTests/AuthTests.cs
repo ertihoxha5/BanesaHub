@@ -102,7 +102,7 @@ public sealed class AuthTests(WebApplicationFactory<Program> factory)
     }
 
     [Fact]
-    public async Task OrganizationCreationRequiresAuthenticationAndAssignsOwner()
+    public async Task OrganizationCreationAndInvitationsEnforceMembershipRules()
     {
         using var host = CreateHost();
         using var client = host.CreateClient(new WebApplicationFactoryClientOptions
@@ -143,6 +143,41 @@ public sealed class AuthTests(WebApplicationFactory<Program> factory)
         Assert.Equal(saved.Id, membership.OrganizationId);
         Assert.Equal(user.Id, membership.UserId);
         Assert.Equal(BanesaHub.Domain.Organizations.MembershipRole.Owner, membership.Role);
+
+        var inviteRoute = $"/api/v1/organizations/{saved.Id}/invitations";
+        const string inviteeEmail = "invitee@example.test";
+        using var issue = await client.PostAsJsonAsync(inviteRoute, new { email = inviteeEmail, role = 2 });
+        Assert.Equal(HttpStatusCode.Created, issue.StatusCode);
+        var issued = await issue.Content.ReadFromJsonAsync<InvitationResponse>();
+        Assert.NotNull(issued);
+
+        const string acceptRoute = "/api/v1/organizations/invitations/accept";
+        var acceptance = new { token = issued.Token };
+        using var wrongAccount = await client.PostAsJsonAsync(acceptRoute, acceptance);
+        Assert.Equal(HttpStatusCode.BadRequest, wrongAccount.StatusCode);
+
+        using var invitee = host.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            BaseAddress = new Uri("https://localhost"),
+            AllowAutoRedirect = false
+        });
+        await RefreshToken(invitee);
+        var inviteeCredentials = new { email = inviteeEmail, password = credentials.password };
+        using var inviteeRegister = await invitee.PostAsJsonAsync("/api/v1/auth/register", inviteeCredentials);
+        Assert.Equal(HttpStatusCode.Created, inviteeRegister.StatusCode);
+        using var inviteeLogin = await invitee.PostAsJsonAsync("/api/v1/auth/login", inviteeCredentials);
+        Assert.Equal(HttpStatusCode.NoContent, inviteeLogin.StatusCode);
+        await RefreshToken(invitee);
+        using var unauthorizedIssue = await invitee.PostAsJsonAsync(inviteRoute, new { email = inviteeEmail, role = 2 });
+        Assert.Equal(HttpStatusCode.NotFound, unauthorizedIssue.StatusCode);
+        using var accepted = await invitee.PostAsJsonAsync(acceptRoute, acceptance);
+        Assert.Equal(HttpStatusCode.NoContent, accepted.StatusCode);
+        using var replay = await invitee.PostAsJsonAsync(acceptRoute, acceptance);
+        Assert.Equal(HttpStatusCode.BadRequest, replay.StatusCode);
+        var inviteeId = await database.Users.Where(item => item.Email == inviteeEmail).Select(item => item.Id).SingleAsync();
+        var inviteeMembership = await database.Memberships.SingleAsync(item => item.UserId == inviteeId);
+        Assert.Equal(saved.Id, inviteeMembership.OrganizationId);
+        Assert.Equal(BanesaHub.Domain.Organizations.MembershipRole.PropertyManager, inviteeMembership.Role);
     }
 
     private WebApplicationFactory<Program> CreateHost(IPasswordResetDelivery? delivery = null)
@@ -182,6 +217,8 @@ public sealed class AuthTests(WebApplicationFactory<Program> factory)
         client.DefaultRequestHeaders.Remove("X-CSRF-TOKEN");
         client.DefaultRequestHeaders.Add("X-CSRF-TOKEN", response!.RequestToken);
     }
+
+    private sealed record InvitationResponse(string Token);
 
     private sealed record AntiforgeryResponse(string RequestToken);
 }

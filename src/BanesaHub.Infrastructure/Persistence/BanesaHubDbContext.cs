@@ -22,6 +22,18 @@ public sealed class BanesaHubDbContext(DbContextOptions<BanesaHubDbContext> opti
             organization.HasIndex(item => item.Slug).IsUnique();
         });
 
+        builder.Entity<OrganizationInvitation>(invitation =>
+        {
+            invitation.ToTable("OrganizationInvitations", table => table.HasCheckConstraint(
+                "CK_OrganizationInvitations_Role", "[Role] IN (2, 3, 4, 5)"));
+            invitation.Property(item => item.NormalizedEmail).HasMaxLength(256);
+            invitation.Property(item => item.TokenHash).HasMaxLength(64).IsUnicode(false);
+            invitation.HasIndex(item => item.TokenHash).IsUnique();
+            invitation.Property(item => item.AcceptedAt).IsConcurrencyToken();
+            invitation.HasOne<Organization>().WithMany()
+                .HasForeignKey(item => item.OrganizationId).OnDelete(DeleteBehavior.Restrict);
+        });
+
         builder.Entity<Membership>(membership =>
         {
             membership.ToTable("Memberships", table => table.HasCheckConstraint(
