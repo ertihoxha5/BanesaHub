@@ -214,3 +214,12 @@
 
   git add -- src/BanesaHub.API/Program.cs src/BanesaHub.API/Controllers/BuildingsController.cs src/BanesaHub.Application/Properties/IBuildingInventory.cs src/BanesaHub.Infrastructure/Persistence/BuildingInventory.cs src/BanesaHub.Infrastructure/Persistence/PropertyInventory.cs tests/BanesaHub.IntegrationTests/AuthTests.cs docs/milestones.md docs/development-log.md
   git commit -m "feat(properties): add scoped building endpoints"
+
+## 2026-11-15 — Unit API (M03.2c)
+
+- Added paginated list, detail, create, update and archive endpoints under each building. The API verifies the organization, property and building and reuses the property management role check.
+- Validated unit numbers, decimal area and occupancy status. Duplicate numbers return HTTP 409. Numbers remain reserved after archive, consistent with the existing SQL Server unique index. The API also translates a database uniqueness violation from a concurrent write into HTTP 409.
+- Restore and build passed with zero warnings and errors. Seven integration cases passed, including unit validation, pagination, duplicate handling, wrong building and organization rejection, and archive behavior. The opt-in SQL Server test was skipped, so the database conflict path was not exercised. Diff and scoped secret checks passed.
+
+  git add -- src/BanesaHub.API/Program.cs src/BanesaHub.API/Controllers/UnitsController.cs src/BanesaHub.Application/Properties/IUnitInventory.cs src/BanesaHub.Infrastructure/Persistence/UnitInventory.cs src/BanesaHub.Infrastructure/Persistence/BuildingInventory.cs tests/BanesaHub.IntegrationTests/AuthTests.cs docs/milestones.md docs/development-log.md
+  git commit -m "feat(properties): add scoped unit endpoints"

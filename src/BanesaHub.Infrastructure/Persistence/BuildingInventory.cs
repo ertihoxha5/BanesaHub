@@ -13,7 +13,7 @@ public sealed class BuildingInventory(BanesaHubDbContext database) : IBuildingIn
     public async Task<IReadOnlyList<BuildingDetails>?> ListAsync(
         Guid organizationId, Guid propertyId, Guid actorId, int offset, int limit, CancellationToken ct)
     {
-        if (!await CanManageProperty(organizationId, propertyId, actorId, ct))
+        if (!await CanManageProperty(database, organizationId, propertyId, actorId, ct))
         {
             return null;
         }
@@ -25,7 +25,7 @@ public sealed class BuildingInventory(BanesaHubDbContext database) : IBuildingIn
     public async Task<BuildingDetails?> FindAsync(
         Guid organizationId, Guid propertyId, Guid actorId, Guid id, CancellationToken ct)
     {
-        if (!await CanManageProperty(organizationId, propertyId, actorId, ct))
+        if (!await CanManageProperty(database, organizationId, propertyId, actorId, ct))
         {
             return null;
         }
@@ -37,7 +37,7 @@ public sealed class BuildingInventory(BanesaHubDbContext database) : IBuildingIn
     public async Task<BuildingDetails?> CreateAsync(
         Guid organizationId, Guid propertyId, Guid actorId, BuildingInput input, CancellationToken ct)
     {
-        if (!await CanManageProperty(organizationId, propertyId, actorId, ct))
+        if (!await CanManageProperty(database, organizationId, propertyId, actorId, ct))
         {
             return null;
         }
@@ -90,11 +90,11 @@ public sealed class BuildingInventory(BanesaHubDbContext database) : IBuildingIn
 
     private async Task<Building?> FindEditable(
         Guid organizationId, Guid propertyId, Guid actorId, Guid id, CancellationToken ct) =>
-        await CanManageProperty(organizationId, propertyId, actorId, ct)
+        await CanManageProperty(database, organizationId, propertyId, actorId, ct)
             ? await Visible(organizationId, propertyId).SingleOrDefaultAsync(item => item.Id == id, ct)
             : null;
 
-    private async Task<bool> CanManageProperty(Guid organizationId, Guid propertyId, Guid actorId, CancellationToken ct) =>
+    internal static async Task<bool> CanManageProperty(BanesaHubDbContext database, Guid organizationId, Guid propertyId, Guid actorId, CancellationToken ct) =>
         await PropertyInventory.CanManage(database, organizationId, actorId, ct) &&
         await database.Properties.AnyAsync(item => item.OrganizationId == organizationId &&
             item.Id == propertyId && item.Status != PropertyStatus.Archived, ct);

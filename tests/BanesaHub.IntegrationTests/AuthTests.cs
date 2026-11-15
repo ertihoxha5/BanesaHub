@@ -265,6 +265,53 @@ public sealed class AuthTests(WebApplicationFactory<Program> factory)
 
         using var changedBuilding = await client.PutAsJsonAsync(buildingRoute, new { name = "North Hall", floorCount = 3 });
         Assert.Equal(HttpStatusCode.NoContent, changedBuilding.StatusCode);
+        using var activeBuilding = await client.PostAsJsonAsync(buildingsRoute, new { name = "South Wing" });
+        Assert.Equal(HttpStatusCode.Created, activeBuilding.StatusCode);
+        var unitsRoute = $"{buildingRoute}/units";
+        var otherUnitsRoute = $"{activeBuilding.Headers.Location!.PathAndQuery}/units";
+
+        using var invalidArea = await client.PostAsJsonAsync(unitsRoute, new { number = "A01", area = 1.001m });
+        Assert.Equal(HttpStatusCode.BadRequest, invalidArea.StatusCode);
+        using var invalidStatus = await client.PostAsJsonAsync(unitsRoute, new { number = "A01", status = 99 });
+        Assert.Equal(HttpStatusCode.BadRequest, invalidStatus.StatusCode);
+        using var createdUnit = await invitee.PostAsJsonAsync(unitsRoute, new { number = " A01 ", area = 45.50m });
+        Assert.Equal(HttpStatusCode.Created, createdUnit.StatusCode);
+        var unitRoute = createdUnit.Headers.Location!.PathAndQuery;
+        var unitId = Guid.Parse(unitRoute.Split('/')[^1]);
+        using var duplicateUnit = await client.PostAsJsonAsync(unitsRoute, new { number = "A01" });
+        Assert.Equal(HttpStatusCode.Conflict, duplicateUnit.StatusCode);
+        using var sameNumberElsewhere = await client.PostAsJsonAsync(otherUnitsRoute, new { number = "A01" });
+        Assert.Equal(HttpStatusCode.Created, sameNumberElsewhere.StatusCode);
+        using var wrongBuilding = await client.PutAsJsonAsync($"{otherUnitsRoute}/{unitId}", new { number = "B01" });
+        Assert.Equal(HttpStatusCode.NotFound, wrongBuilding.StatusCode);
+        using var wrongUnitOrganization = await invitee.GetAsync(
+            $"/api/v1/organizations/{second.Id}/properties/{propertyId}/buildings/{buildingId}/units/{unitId}");
+        Assert.Equal(HttpStatusCode.NotFound, wrongUnitOrganization.StatusCode);
+        using var secondUnit = await client.PostAsJsonAsync(unitsRoute, new { number = "A02" });
+        Assert.Equal(HttpStatusCode.Created, secondUnit.StatusCode);
+        using var duplicateUpdate = await client.PutAsJsonAsync(unitRoute, new { number = "A02" });
+        Assert.Equal(HttpStatusCode.Conflict, duplicateUpdate.StatusCode);
+        using var updatedUnit = await client.PutAsJsonAsync(unitRoute, new { number = "A01", area = 46.75m, status = 3 });
+        Assert.Equal(HttpStatusCode.NoContent, updatedUnit.StatusCode);
+        using var unitDetail = await invitee.GetAsync(unitRoute);
+        Assert.Equal(HttpStatusCode.OK, unitDetail.StatusCode);
+        using var unitPage = await client.GetAsync($"{unitsRoute}?offset=1&limit=1");
+        Assert.Equal(HttpStatusCode.OK, unitPage.StatusCode);
+        var page = Assert.Single((await unitPage.Content.ReadFromJsonAsync<System.Text.Json.JsonElement[]>())!);
+        Assert.Equal("A02", page.GetProperty("number").GetString());
+
+        using var archivedUnit = await client.DeleteAsync(unitRoute);
+        Assert.Equal(HttpStatusCode.NoContent, archivedUnit.StatusCode);
+        using var hiddenUnit = await client.GetAsync(unitRoute);
+        Assert.Equal(HttpStatusCode.NotFound, hiddenUnit.StatusCode);
+        using var reservedNumber = await client.PostAsJsonAsync(unitsRoute, new { number = "A01" });
+        Assert.Equal(HttpStatusCode.Conflict, reservedNumber.StatusCode);
+        var storedUnit = await database.Units.SingleAsync(item => item.Id == unitId);
+        Assert.Equal("A01", storedUnit.Number);
+        Assert.Equal(46.75m, storedUnit.Area);
+        Assert.Equal(BanesaHub.Domain.Properties.UnitStatus.Unavailable, storedUnit.Status);
+        Assert.True(storedUnit.IsArchived);
+
         using var archivedBuilding = await client.DeleteAsync(buildingRoute);
         Assert.Equal(HttpStatusCode.NoContent, archivedBuilding.StatusCode);
         using var hiddenBuilding = await client.GetAsync(buildingRoute);
@@ -274,8 +321,11 @@ public sealed class AuthTests(WebApplicationFactory<Program> factory)
         Assert.Equal(3, storedBuilding.FloorCount);
         Assert.True(storedBuilding.IsArchived);
 
-        using var activeBuilding = await client.PostAsJsonAsync(buildingsRoute, new { name = "South Wing" });
-        Assert.Equal(HttpStatusCode.Created, activeBuilding.StatusCode);
+        using var hiddenByBuilding = await client.GetAsync(secondUnit.Headers.Location!.PathAndQuery);
+        Assert.Equal(HttpStatusCode.NotFound, hiddenByBuilding.StatusCode);
+        using var rejectedByBuilding = await client.PostAsJsonAsync(unitsRoute, new { number = "A03" });
+        Assert.Equal(HttpStatusCode.NotFound, rejectedByBuilding.StatusCode);
+
         using var archived = await client.DeleteAsync(detailRoute);
         Assert.Equal(HttpStatusCode.NoContent, archived.StatusCode);
         using var hidden = await client.GetAsync(detailRoute);
@@ -284,6 +334,8 @@ public sealed class AuthTests(WebApplicationFactory<Program> factory)
         Assert.Equal(HttpStatusCode.NotFound, hiddenByParent.StatusCode);
         using var rejectedByParent = await client.PostAsJsonAsync(buildingsRoute, new { name = "Blocked" });
         Assert.Equal(HttpStatusCode.NotFound, rejectedByParent.StatusCode);
+        using var unitHiddenByProperty = await client.GetAsync(sameNumberElsewhere.Headers.Location!.PathAndQuery);
+        Assert.Equal(HttpStatusCode.NotFound, unitHiddenByProperty.StatusCode);
         var stored = await database.Properties.SingleAsync(item => item.Id == propertyId);
         Assert.Equal("Updated property", stored.Name);
         Assert.Equal(BanesaHub.Domain.Properties.PropertyStatus.Archived, stored.Status);
