@@ -222,6 +222,79 @@ namespace BanesaHub.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("BanesaHub.Domain.Tenants.Lease", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("UnitId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrganizationId", "TenantId");
+
+                    b.HasIndex("OrganizationId", "UnitId", "Status");
+
+                    b.ToTable("Leases", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Leases_Status", "[Status] IN (1, 2, 3, 4)");
+                        });
+                });
+
+            modelBuilder.Entity("BanesaHub.Domain.Tenants.LeaseVersion", b =>
+                {
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("LeaseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("VersionNumber")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("Deposit")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateOnly>("EffectiveFrom")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly?>("EndDate")
+                        .HasColumnType("date");
+
+                    b.Property<decimal>("MonthlyRent")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTimeOffset>("RecordedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateOnly>("StartDate")
+                        .HasColumnType("date");
+
+                    b.HasKey("OrganizationId", "LeaseId", "VersionNumber");
+
+                    b.ToTable("LeaseVersions", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_LeaseVersions_Dates", "[EffectiveFrom] >= [StartDate] AND ([EndDate] IS NULL OR [EndDate] >= [EffectiveFrom])");
+
+                            t.HasCheckConstraint("CK_LeaseVersions_Money", "[MonthlyRent] >= 0 AND ([Deposit] IS NULL OR [Deposit] >= 0)");
+
+                            t.HasCheckConstraint("CK_LeaseVersions_VersionNumber", "[VersionNumber] > 0");
+                        });
+                });
+
             modelBuilder.Entity("BanesaHub.Domain.Tenants.OccupancyPeriod", b =>
                 {
                     b.Property<Guid>("Id")
@@ -560,6 +633,33 @@ namespace BanesaHub.Infrastructure.Persistence.Migrations
                     b.HasOne("BanesaHub.Domain.Properties.Building", null)
                         .WithMany()
                         .HasForeignKey("OrganizationId", "BuildingId")
+                        .HasPrincipalKey("OrganizationId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("BanesaHub.Domain.Tenants.Lease", b =>
+                {
+                    b.HasOne("BanesaHub.Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId", "TenantId")
+                        .HasPrincipalKey("OrganizationId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("BanesaHub.Domain.Properties.Unit", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId", "UnitId")
+                        .HasPrincipalKey("OrganizationId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("BanesaHub.Domain.Tenants.LeaseVersion", b =>
+                {
+                    b.HasOne("BanesaHub.Domain.Tenants.Lease", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId", "LeaseId")
                         .HasPrincipalKey("OrganizationId", "Id")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();

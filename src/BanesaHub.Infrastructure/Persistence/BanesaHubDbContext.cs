@@ -20,12 +20,15 @@ public sealed class BanesaHubDbContext(DbContextOptions<BanesaHubDbContext> opti
     public DbSet<Unit> Units => Set<Unit>();
     public DbSet<Tenant> Tenants => Set<Tenant>();
     public DbSet<OccupancyPeriod> OccupancyPeriods => Set<OccupancyPeriod>();
+    public DbSet<Lease> Leases => Set<Lease>();
+    public DbSet<LeaseVersion> LeaseVersions => Set<LeaseVersion>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
         PropertyModelConfiguration.Configure(builder);
         TenantModelConfiguration.Configure(builder);
+        LeaseModelConfiguration.Configure(builder);
 
         builder.Entity<AuditEvent>(audit =>
         {

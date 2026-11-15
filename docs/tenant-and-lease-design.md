@@ -7,3 +7,9 @@ M04.1 implements tenant contacts and occupancy history for FR-03 and establishes
 - Follow the PDF's one-primary-tenant proposal for the MVP. Keep occupancy dates separate from contractual dates so termination and actual departure can differ. Preserve prior occupancy as separate rows.
 - SQL Server checks the date order, prevents identical start dates for the same unit and prevents cross-organization links. The lease lifecycle checkpoint will enforce full overlap prevention in a transaction. This schema does not activate leases or write occupancy periods by itself.
 - Keep deposits separate from rental income and omit automatic proration in the MVP, as proposed in the PDF. First and last month handling, billing due dates and correction rules remain decisions for the billing checkpoints.
+
+## Lease records and versions
+
+A lease identifies one unit and one primary tenant within an organization. Its lifecycle state is draft, active, ended or cancelled. Each version keeps a numbered snapshot of the contractual dates, effective date, monthly rent and optional deposit in EUR, with a UTC recording timestamp. Amendments will append versions so prior terms remain available.
+
+The lease activation service will select the applicable terms and check for overlapping active leases in a transaction. Expiration, early termination and recording actual occupancy dates belong to the lifecycle workflow.

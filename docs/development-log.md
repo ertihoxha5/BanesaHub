@@ -285,3 +285,11 @@
 
   git add -- docs/tenant-and-lease-design.md docs/milestones.md docs/development-log.md src/BanesaHub.Domain/Tenants src/BanesaHub.Infrastructure/Persistence/BanesaHubDbContext.cs src/BanesaHub.Infrastructure/Persistence/TenantModelConfiguration.cs src/BanesaHub.Infrastructure/Persistence/Migrations/20261115215940_AddTenantOccupancyHistory.cs src/BanesaHub.Infrastructure/Persistence/Migrations/20261115215940_AddTenantOccupancyHistory.Designer.cs src/BanesaHub.Infrastructure/Persistence/Migrations/BanesaHubDbContextModelSnapshot.cs
   git commit -m "feat(tenants): add tenant and occupancy history model"
+
+## 2026-11-15 — Versioned lease model (M04.2a)
+
+- Added a lease record, numbered term snapshots, EF mappings and the AddVersionedLeases migration. SQL Server constraints scope leases and versions to their organization and validate lease status, dates and amounts.
+- Restore and build passed with zero warnings and errors. EF found no pending model changes and generated SQL for review. Seven integration tests passed. The opt-in live SQL Server test was skipped. The diff and scoped secret checks passed.
+
+  git add -- docs/tenant-and-lease-design.md docs/milestones.md docs/development-log.md src/BanesaHub.Domain/Tenants/Lease.cs src/BanesaHub.Domain/Tenants/LeaseVersion.cs src/BanesaHub.Infrastructure/Persistence/BanesaHubDbContext.cs src/BanesaHub.Infrastructure/Persistence/LeaseModelConfiguration.cs src/BanesaHub.Infrastructure/Persistence/Migrations/20261115220754_AddVersionedLeases.cs src/BanesaHub.Infrastructure/Persistence/Migrations/20261115220754_AddVersionedLeases.Designer.cs src/BanesaHub.Infrastructure/Persistence/Migrations/BanesaHubDbContextModelSnapshot.cs
+  git commit -m "feat(leases): add versioned lease persistence"
