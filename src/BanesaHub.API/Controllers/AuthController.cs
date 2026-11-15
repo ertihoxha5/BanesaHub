@@ -1,6 +1,7 @@
 using System.Net.Mail;
 using System.Text;
 using BanesaHub.API.Auth;
+using BanesaHub.Infrastructure.Persistence;
 using Microsoft.AspNetCore.WebUtilities;
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Antiforgery;
@@ -42,10 +43,34 @@ public sealed class AuthController(
     }
 
     [HttpPost("login")]
-    public async Task<IActionResult> Login(Credentials request)
+    public async Task<IActionResult> Login(Credentials request,
+        [FromServices] BanesaHubDbContext database, [FromServices] TimeProvider clock,
+        CancellationToken cancellationToken)
     {
-        var result = await signIn.PasswordSignInAsync(
-            request.Email, request.Password, isPersistent: false, lockoutOnFailure: true);
+        var user = await users.FindByNameAsync(request.Email);
+        var result = user is null
+            ? Microsoft.AspNetCore.Identity.SignInResult.Failed
+            : await signIn.PasswordSignInAsync(user, request.Password, isPersistent: false, lockoutOnFailure: true);
+
+        database.AuditEvents.Add(new AuditEvent
+        {
+            ActorId = user?.Id,
+            Action = result.Succeeded ? "LoginSucceeded" :
+                result.IsLockedOut ? "LoginLockedOut" : "LoginRejected",
+            At = clock.GetUtcNow()
+        });
+        try
+        {
+            await database.SaveChangesAsync(cancellationToken);
+        }
+        catch
+        {
+            if (result.Succeeded)
+            {
+                await signIn.SignOutAsync();
+            }
+            throw;
+        }
 
         return result.Succeeded
             ? NoContent()

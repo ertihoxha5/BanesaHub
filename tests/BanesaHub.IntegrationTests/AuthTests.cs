@@ -47,6 +47,15 @@ public sealed class AuthTests(WebApplicationFactory<Program> factory)
         using var login = await client.PostAsJsonAsync("/api/v1/auth/login", credentials);
         Assert.Equal(lockAccount ? HttpStatusCode.Unauthorized : HttpStatusCode.NoContent, login.StatusCode);
 
+        using var auditScope = host.Services.CreateScope();
+        var auditDatabase = auditScope.ServiceProvider.GetRequiredService<BanesaHubDbContext>();
+        var account = await auditDatabase.Users.SingleAsync();
+        var events = await auditDatabase.AuditEvents.ToListAsync();
+        Assert.All(events, item => Assert.Equal(account.Id, item.ActorId));
+        Assert.All(events, item => Assert.Null(item.OrganizationId));
+        Assert.Equal(lockAccount ? 6 : 1, events.Count);
+        Assert.Contains(events, item => item.Action == (lockAccount ? "LoginLockedOut" : "LoginSucceeded"));
+
         if (!lockAccount)
         {
             await RefreshToken(client);
@@ -186,6 +195,10 @@ public sealed class AuthTests(WebApplicationFactory<Program> factory)
         var inviteeMembership = await database.Memberships.SingleAsync(item => item.UserId == inviteeId);
         Assert.Equal(saved.Id, inviteeMembership.OrganizationId);
         Assert.Equal(BanesaHub.Domain.Organizations.MembershipRole.PropertyManager, inviteeMembership.Role);
+        var roleGrants = await database.AuditEvents.Where(item => item.OrganizationId == saved.Id).ToListAsync();
+        Assert.Equal(2, roleGrants.Count);
+        Assert.Contains(roleGrants, item => item.ActorId == user.Id && item.Action == "MembershipRoleGranted.Owner");
+        Assert.Contains(roleGrants, item => item.ActorId == inviteeId && item.Action == "MembershipRoleGranted.PropertyManager");
     }
 
     private WebApplicationFactory<Program> CreateHost(IPasswordResetDelivery? delivery = null)

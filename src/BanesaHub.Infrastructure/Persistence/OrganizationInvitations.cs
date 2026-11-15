@@ -61,6 +61,13 @@ public sealed class OrganizationInvitations(BanesaHubDbContext database, TimePro
         }
 
         invitation.AcceptedAt = now;
+        database.AuditEvents.Add(new AuditEvent
+        {
+            ActorId = userId,
+            OrganizationId = invitation.OrganizationId,
+            Action = $"MembershipRoleGranted.{invitation.Role}",
+            At = now
+        });
         database.Memberships.Add(new Membership
         {
             OrganizationId = invitation.OrganizationId,

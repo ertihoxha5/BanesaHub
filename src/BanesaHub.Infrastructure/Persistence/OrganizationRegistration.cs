@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BanesaHub.Infrastructure.Persistence;
 
-public sealed class OrganizationRegistration(BanesaHubDbContext database) : IOrganizationRegistration
+public sealed class OrganizationRegistration(BanesaHubDbContext database, TimeProvider clock) : IOrganizationRegistration
 {
     public async Task<Guid?> CreateAsync(
         Guid ownerId, string name, string slug, CancellationToken cancellationToken)
@@ -22,6 +22,14 @@ public sealed class OrganizationRegistration(BanesaHubDbContext database) : IOrg
             OrganizationId = id,
             UserId = ownerId,
             Role = MembershipRole.Owner
+        });
+
+        database.AuditEvents.Add(new AuditEvent
+        {
+            ActorId = ownerId,
+            OrganizationId = id,
+            Action = "MembershipRoleGranted.Owner",
+            At = clock.GetUtcNow()
         });
 
         try

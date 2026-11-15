@@ -11,9 +11,19 @@ public sealed class BanesaHubDbContext(DbContextOptions<BanesaHubDbContext> opti
     public DbSet<Organization> Organizations => Set<Organization>();
     public DbSet<Membership> Memberships => Set<Membership>();
 
+    public DbSet<AuditEvent> AuditEvents => Set<AuditEvent>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
+
+        builder.Entity<AuditEvent>(audit =>
+        {
+            audit.Property(item => item.Action).HasMaxLength(80);
+            audit.HasIndex(item => new { item.OrganizationId, item.At });
+            audit.HasOne<Organization>().WithMany()
+                .HasForeignKey(item => item.OrganizationId).OnDelete(DeleteBehavior.Restrict);
+        });
 
         builder.Entity<Organization>(organization =>
         {

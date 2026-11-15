@@ -162,3 +162,12 @@
 
   git add -- src/BanesaHub.API/Program.cs src/BanesaHub.API/Controllers/OrganizationsController.cs src/BanesaHub.Application/Organizations/IOrganizationDirectory.cs src/BanesaHub.Infrastructure/Persistence/OrganizationDirectory.cs src/BanesaHub.Infrastructure/Persistence/OrganizationInvitations.cs tests/BanesaHub.IntegrationTests/AuthTests.cs docs/milestones.md docs/development-log.md
   git commit -m "feat(organizations): scope access to active memberships"
+
+## 2026-11-15 — Login and role audit (M02.4a)
+
+- Added durable UTC audit records for successful, rejected and locked-out sign-ins. Account events have no organization scope. Records omit email addresses, passwords and tokens.
+- Organization creation and invitation acceptance write role grant events in the same save as membership. Added the EF migration for audit storage.
+- Build passed without warnings or errors. All seven integration cases passed, including audit assertions. EF found no model drift. Live SQL Server migration remains pending.
+
+  git add -- src/BanesaHub.API/Controllers/AuthController.cs src/BanesaHub.Infrastructure/Persistence/AuditEvent.cs src/BanesaHub.Infrastructure/Persistence/BanesaHubDbContext.cs src/BanesaHub.Infrastructure/Persistence/OrganizationRegistration.cs src/BanesaHub.Infrastructure/Persistence/OrganizationInvitations.cs src/BanesaHub.Infrastructure/Persistence/Migrations tests/BanesaHub.IntegrationTests/AuthTests.cs docs/milestones.md docs/development-log.md
+  git commit -m "feat(audit): record login outcomes and role grants"
