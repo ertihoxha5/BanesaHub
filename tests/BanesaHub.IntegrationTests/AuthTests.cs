@@ -338,6 +338,50 @@ public sealed class AuthTests(WebApplicationFactory<Program> factory)
         Assert.Equal(BanesaHub.Domain.Properties.PropertyStatus.Archived, archivedThroughMvc.Status);
         Assert.DoesNotContain("MVC updated", await browser.GetStringAsync(pageRoute));
 
+        var webBuildings = $"{pageRoute}/{propertyId}/buildings";
+        var webNewBuilding = $"{webBuildings}/new";
+        var propertyListHtml = await browser.GetStringAsync(pageRoute);
+        Assert.Contains($"href=\"{webBuildings}\"", propertyListHtml);
+        Assert.Contains("North Wing", await browser.GetStringAsync(webBuildings));
+        Assert.DoesNotContain("North Wing", await browser.GetStringAsync($"{webBuildings}?page=2"));
+        var buildingFormHtml = await browser.GetStringAsync(webNewBuilding);
+        Assert.Contains($"action=\"{webNewBuilding}\"", buildingFormHtml);
+
+        async Task<HttpResponseMessage> SubmitBuilding(string route, string name, string floors)
+        {
+            using var fields = new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["Input.Name"] = name,
+                ["Input.FloorCount"] = floors,
+                ["__RequestVerificationToken"] = formToken
+            });
+            return await browser.PostAsync(route, fields);
+        }
+
+        using var invalidFloors = await SubmitBuilding(webNewBuilding, "MVC building", "0");
+        Assert.Equal(HttpStatusCode.OK, invalidFloors.StatusCode);
+        Assert.Contains("duhet t", await invalidFloors.Content.ReadAsStringAsync());
+        using var webBuildingCreated = await SubmitBuilding(webNewBuilding, "MVC building", "");
+        Assert.Equal(HttpStatusCode.Found, webBuildingCreated.StatusCode);
+        var mvcBuilding = await database.Buildings.AsNoTracking().SingleAsync(item => item.PropertyId == propertyId && item.Name == "MVC building");
+        Assert.Null(mvcBuilding.FloorCount);
+        var otherPropertyId = Guid.Parse(otherProperty.Headers.Location!.AbsolutePath.Split('/')[^1]);
+        using var mismatchedEdit = await SubmitBuilding(
+            $"/organizations/{saved.Id}/properties/{otherPropertyId}/buildings/{mvcBuilding.Id}/edit", "Rejected", "2");
+        Assert.Equal(HttpStatusCode.NotFound, mismatchedEdit.StatusCode);
+        var webBuildingEdit = $"{webBuildings}/{mvcBuilding.Id}/edit";
+        Assert.Contains("MVC building", await browser.GetStringAsync(webBuildingEdit));
+        using var webBuildingUpdated = await SubmitBuilding(webBuildingEdit, "MVC building updated", "4");
+        Assert.Equal(HttpStatusCode.Found, webBuildingUpdated.StatusCode);
+        var webBuildingArchive = $"{webBuildings}/{mvcBuilding.Id}/archive";
+        Assert.Contains("MVC building updated", await browser.GetStringAsync(webBuildingArchive));
+        using var webBuildingArchived = await SubmitBuilding(webBuildingArchive, "", "");
+        Assert.Equal(HttpStatusCode.Found, webBuildingArchived.StatusCode);
+        var archivedMvcBuilding = await database.Buildings.AsNoTracking().SingleAsync(item => item.Id == mvcBuilding.Id);
+        Assert.Equal(4, archivedMvcBuilding.FloorCount);
+        Assert.True(archivedMvcBuilding.IsArchived);
+        Assert.DoesNotContain("MVC building updated", await browser.GetStringAsync(webBuildings));
+
         var buildingId = buildingRoute.Split('/')[^1];
         using var mismatchedBuilding = await client.GetAsync($"{otherProperty.Headers.Location!.PathAndQuery}/buildings/{buildingId}");
         Assert.Equal(HttpStatusCode.NotFound, mismatchedBuilding.StatusCode);

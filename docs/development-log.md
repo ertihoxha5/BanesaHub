@@ -241,3 +241,12 @@
 
   git add -- src/BanesaHub.Web/Controllers/PropertyFormsController.cs src/BanesaHub.Web/Inventory/PropertyForm.cs src/BanesaHub.Web/Inventory/InventoryApi.cs src/BanesaHub.Web/Views/Inventory/Index.cshtml src/BanesaHub.Web/Views/PropertyForms/Form.cshtml src/BanesaHub.Web/Views/Shared/_InventoryLayout.cshtml tests/BanesaHub.IntegrationTests/AuthTests.cs docs/milestones.md docs/development-log.md
   git commit -m "feat(properties): add MVC property forms"
+
+## 2026-11-15 — MVC building list and forms (M03.3c)
+
+- Linked each property to its building list with up to 20 buildings per page. Added Albanian create, edit and archive forms with optional positive floor counts and archive confirmation.
+- Reused API authorization and the existing antiforgery flow for writes. Organization, property and building IDs are bound from the route.
+- Restore and build passed with zero warnings and errors. Seven integration tests passed, including building navigation, paging, validation, create/edit/archive, and wrong-property write rejection. The opt-in SQL Server test was skipped. Diff and scoped secret checks passed.
+
+  git add -- src/BanesaHub.Web/Controllers/BuildingsController.cs src/BanesaHub.Web/Inventory/BuildingModels.cs src/BanesaHub.Web/Inventory/InventoryApi.cs src/BanesaHub.Web/Views/Buildings/Form.cshtml src/BanesaHub.Web/Views/Buildings/Index.cshtml src/BanesaHub.Web/Views/Inventory/Index.cshtml tests/BanesaHub.IntegrationTests/AuthTests.cs docs/milestones.md docs/development-log.md
+  git commit -m "feat(properties): add MVC building management"

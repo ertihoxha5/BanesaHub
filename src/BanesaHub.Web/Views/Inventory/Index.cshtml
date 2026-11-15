@@ -74,6 +74,9 @@ else
                         <td><span class="property-status @(property.Status == PropertyFilter.Active ? "active-status" : "")">@(property.Status == PropertyFilter.Active ? "Aktive" : "Draft")</span></td>
                         <td>
                             <div class="d-flex flex-wrap gap-2">
+                                <a class="btn btn-sm btn-outline-primary" asp-controller="Buildings" asp-action="Index"
+                                   asp-route-organizationId="@Model.OrganizationId" asp-route-propertyId="@property.Id"
+                                   aria-label="Ndërtesat e pronës @property.Name">Ndërtesat</a>
                                 <a class="btn btn-sm btn-outline-primary" asp-controller="PropertyForms" asp-action="Edit"
                                    asp-route-organizationId="@Model.OrganizationId" asp-route-propertyId="@property.Id"
                                    aria-label="Ndrysho @property.Name">Ndrysho</a>

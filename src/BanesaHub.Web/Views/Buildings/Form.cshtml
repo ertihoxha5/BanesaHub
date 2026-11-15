@@ -1,0 +1,35 @@
+@model BanesaHub.Web.Inventory.BuildingForm
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@{
+    Layout = "_InventoryLayout";
+    var action = Model.Archive ? "Archive" : Model.BuildingId.HasValue ? "Edit" : "Create";
+    var title = Model.Archive ? "Arkivo ndërtesën" : Model.BuildingId.HasValue ? "Ndrysho ndërtesën" : "Shto ndërtesë";
+    ViewData["Title"] = title;
+}
+
+<h1>@title</h1>
+<form class="panel entry" method="post" asp-action="@action" asp-route-organizationId="@Model.OrganizationId"
+      asp-route-propertyId="@Model.PropertyId" asp-route-buildingId="@Model.BuildingId">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    @if (Model.Archive)
+    {
+        <p>Ndërtesa <strong>@Model.Input.Name</strong> dhe njësitë e saj nuk do të shfaqen më në inventar.</p>
+    }
+    else
+    {
+        <label class="form-label" asp-for="Input.Name">Emri i ndërtesës</label>
+        <input class="form-control" asp-for="Input.Name" required maxlength="200">
+        <span class="text-danger" asp-validation-for="Input.Name"></span>
+
+        <label class="form-label mt-3" asp-for="Input.FloorCount">Numri i kateve (opsional)</label>
+        <input class="form-control" asp-for="Input.FloorCount" type="number" min="1" step="1">
+        <span class="text-danger" asp-validation-for="Input.FloorCount"></span>
+    }
+    <div class="d-flex flex-wrap gap-2 mt-4">
+        <button class="btn @(Model.Archive ? "btn-danger" : "btn-primary")" type="submit">
+            @(Model.Archive ? "Arkivo ndërtesën" : "Ruaj")
+        </button>
+        <a class="btn btn-outline-secondary" asp-action="Index" asp-route-organizationId="@Model.OrganizationId"
+           asp-route-propertyId="@Model.PropertyId">Anulo</a>
+    </div>
+</form>

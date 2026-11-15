@@ -46,8 +46,49 @@ public sealed class InventoryApi(HttpClient http)
         return (response.StatusCode, property);
     }
 
-    public async Task<HttpStatusCode> WritePropertyAsync(
+    public Task<HttpStatusCode> WritePropertyAsync(
         Guid organizationId, Guid? propertyId, string session, HttpMethod method, PropertyInput? input, CancellationToken ct)
+    {
+        var path = $"/api/v1/organizations/{organizationId}/properties";
+        return WriteAsync(propertyId.HasValue ? $"{path}/{propertyId}" : path, session, method, input, ct);
+    }
+
+    public Task<HttpStatusCode> WriteBuildingAsync(Guid organizationId, Guid propertyId, Guid? buildingId,
+        string session, HttpMethod method, BuildingInput? input, CancellationToken ct)
+    {
+        var path = BuildingsPath(organizationId, propertyId);
+        return WriteAsync(buildingId.HasValue ? $"{path}/{buildingId}" : path, session, method, input, ct);
+    }
+
+    public async Task<(HttpStatusCode Status, BuildingRow[] Rows)> ListBuildingsAsync(
+        Guid organizationId, Guid propertyId, string session, int offset, int limit, CancellationToken ct)
+    {
+        var path = FormattableString.Invariant($"{BuildingsPath(organizationId, propertyId)}?offset={offset}&limit={limit}");
+        var (status, rows) = await ReadBuildingDataAsync<BuildingRow[]>(path, session, ct);
+        return (status, rows ?? []);
+    }
+
+    public Task<(HttpStatusCode Status, BuildingRow? Row)> FindBuildingAsync(
+        Guid organizationId, Guid propertyId, Guid buildingId, string session, CancellationToken ct) =>
+        ReadBuildingDataAsync<BuildingRow>($"{BuildingsPath(organizationId, propertyId)}/{buildingId}", session, ct);
+
+    private static string BuildingsPath(Guid organizationId, Guid propertyId) =>
+        $"/api/v1/organizations/{organizationId}/properties/{propertyId}/buildings";
+
+    private async Task<(HttpStatusCode Status, T? Data)> ReadBuildingDataAsync<T>(
+        string path, string session, CancellationToken ct) where T : class
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, path);
+        request.Headers.Add("Cookie", $"{SessionCookie}={session}");
+        using var response = await http.SendAsync(request, ct);
+        var data = response.StatusCode == HttpStatusCode.OK
+            ? await response.Content.ReadFromJsonAsync<T>(ct)
+            : null;
+        return (response.StatusCode, data);
+    }
+
+    private async Task<HttpStatusCode> WriteAsync(
+        string path, string session, HttpMethod method, object? input, CancellationToken ct)
     {
         var tokenUri = new Uri(http.BaseAddress!, "/api/v1/auth/antiforgery");
         using var tokenRequest = new HttpRequestMessage(HttpMethod.Get, tokenUri);
@@ -67,8 +108,7 @@ public sealed class InventoryApi(HttpClient http)
         var cookies = new CookieContainer();
         cookies.Add(tokenUri, new Cookie(SessionCookie, session, "/") { Secure = true });
         CaptureCookies(tokenResponse, cookies);
-        var path = $"/api/v1/organizations/{organizationId}/properties";
-        var uri = new Uri(http.BaseAddress!, propertyId.HasValue ? $"{path}/{propertyId}" : path);
+        var uri = new Uri(http.BaseAddress!, path);
         using var request = new HttpRequestMessage(method, uri);
         request.Headers.Add("Cookie", cookies.GetCookieHeader(uri));
         request.Headers.Add("X-CSRF-TOKEN", token.RequestToken);
