@@ -187,3 +187,12 @@
 
   git add -- tests/BanesaHub.IntegrationTests/AuthTests.cs tests/BanesaHub.IntegrationTests/SqlServerFactAttribute.cs docs/setup-guide.md docs/milestones.md docs/development-log.md
   git commit -m "test(organizations): add SQL Server isolation coverage"
+
+## 2026-11-15 — Property inventory schema (M03.1)
+
+- Added Property, Building and Unit models and a SQL Server migration. Organization-scoped foreign keys prevent cross-organization parent links. Unit numbers are unique within each building. Draft properties can omit address and category.
+- Build passed with zero warnings or errors. EF reported no pending model changes. Reviewed the generated SQL constraints. Seven integration cases passed and the opt-in SQL Server case skipped.
+- SQL Server Windows authentication remains unavailable in this session. M02.5 verification stays open and the inventory migration has yet to be applied to a live database.
+
+  git add -- src/BanesaHub.Domain/Properties src/BanesaHub.Infrastructure/Persistence/PropertyModelConfiguration.cs src/BanesaHub.Infrastructure/Persistence/BanesaHubDbContext.cs src/BanesaHub.Infrastructure/Persistence/Migrations docs/milestones.md docs/development-log.md
+  git commit -m "feat(properties): add property inventory schema"

@@ -1,3 +1,4 @@
+using BanesaHub.Domain.Properties;
 using BanesaHub.Domain.Organizations;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -13,9 +14,14 @@ public sealed class BanesaHubDbContext(DbContextOptions<BanesaHubDbContext> opti
 
     public DbSet<AuditEvent> AuditEvents => Set<AuditEvent>();
 
+    public DbSet<Property> Properties => Set<Property>();
+    public DbSet<Building> Buildings => Set<Building>();
+    public DbSet<Unit> Units => Set<Unit>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
+        PropertyModelConfiguration.Configure(builder);
 
         builder.Entity<AuditEvent>(audit =>
         {
