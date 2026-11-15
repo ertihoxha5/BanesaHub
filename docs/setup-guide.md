@@ -64,3 +64,14 @@ The MVC host starts on port 7042. Its root currently returns 404 because the UI 
 Configure an SMTP relay that supports STARTTLS. Set `PasswordReset:Smtp:Host` and `PasswordReset:Smtp:From` in API user secrets. The default port is 587. Optional keys are `Port`, `Username` and `Password` under the same section. Keep relay credentials outside Git.
 
 Use the usual antiforgery cookie and `X-CSRF-TOKEN` header for both POST requests. Send `email` to `/api/v1/auth/forgot-password`. The API returns 202 for either account lookup result when delivery is configured. Submit `email`, `code` and `newPassword` to `/api/v1/auth/reset-password`. The code arrives by email, expires after 30 minutes, and becomes invalid after use. Existing login cookies are rejected on subsequent authenticated requests. The request endpoint returns 503 when SMTP settings are missing.
+
+## Seed a local development database
+
+Apply migrations first and confirm the API connection points at your development database. Set `DevelopmentSeed:Password` in the API project user secrets to a password that meets the Identity policy. The sample accounts share this local password.
+
+```powershell
+$env:ASPNETCORE_ENVIRONMENT = 'Development'
+dotnet run --project src/BanesaHub.API --no-launch-profile -- seed-development
+```
+
+The command exits after creating `owner-a@example.test` for `demo-a` and `owner-b@example.test` for `demo-b`. A repeat run preserves intact fixtures and their passwords. If the sample emails or slugs already belong to other records, use a separate development database. Start the API normally to sign in through its account endpoints.

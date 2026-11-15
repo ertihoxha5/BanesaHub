@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using BanesaHub.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Identity;
 
-var builder = WebApplication.CreateBuilder(args);
+var builder = WebApplication.CreateBuilder(args is ["seed-development"] ? [] : args);
 
 builder.Logging.ClearProviders();
 builder.Logging.Configure(options =>
@@ -67,6 +67,15 @@ builder.Services.AddHealthChecks();
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
+
+if (args is ["seed-development"])
+{
+    await using (app)
+    {
+        await DevelopmentSeed.RunAsync(app);
+    }
+    return;
+}
 
 if (app.Environment.IsDevelopment())
 {

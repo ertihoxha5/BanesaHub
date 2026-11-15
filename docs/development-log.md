@@ -171,3 +171,11 @@
 
   git add -- src/BanesaHub.API/Controllers/AuthController.cs src/BanesaHub.Infrastructure/Persistence/AuditEvent.cs src/BanesaHub.Infrastructure/Persistence/BanesaHubDbContext.cs src/BanesaHub.Infrastructure/Persistence/OrganizationRegistration.cs src/BanesaHub.Infrastructure/Persistence/OrganizationInvitations.cs src/BanesaHub.Infrastructure/Persistence/Migrations tests/BanesaHub.IntegrationTests/AuthTests.cs docs/milestones.md docs/development-log.md
   git commit -m "feat(audit): record login outcomes and role grants"
+
+## 2026-11-15 — Development seed data (M02.4b)
+
+- Added the explicit Development-only seed-development command. It uses Identity and the existing organization registration service to create two sample owners and organizations in one SQL Server transaction. The password comes from API user secrets. Existing intact fixtures are preserved.
+- Restored and built with zero warnings or errors. All seven existing integration cases passed. The compiled command rejected Production. Live seeding and repeat-run verification remain pending because this session cannot authenticate to local SQL Server.
+
+  git add -- src/BanesaHub.API/Program.cs src/BanesaHub.API/Auth/DevelopmentSeed.cs docs/setup-guide.md docs/milestones.md docs/development-log.md
+  git commit -m "feat(dev): add opt-in organization seed data"
