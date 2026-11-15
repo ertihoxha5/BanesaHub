@@ -516,6 +516,9 @@ public sealed class AuthTests(WebApplicationFactory<Program> factory)
         Assert.Equal(HttpStatusCode.Found, webUnitArchived.StatusCode);
         Assert.DoesNotContain("MVC-02", await browser.GetStringAsync(webUnits));
 
+        await VerifyLeaseActivation(database, client, invitee, saved.Id, second.Id,
+            Guid.Parse(sameNumberElsewhere.Headers.Location!.AbsolutePath.Split('/')[^1]));
+
         using var archivedUnit = await client.DeleteAsync(unitRoute);
         Assert.Equal(HttpStatusCode.NoContent, archivedUnit.StatusCode);
         using var hiddenUnit = await client.GetAsync(unitRoute);
@@ -560,6 +563,89 @@ public sealed class AuthTests(WebApplicationFactory<Program> factory)
         Assert.Equal(2, roleGrants.Count);
         Assert.Contains(roleGrants, item => item.ActorId == user.Id && item.Action == "MembershipRoleGranted.Owner");
         Assert.Contains(roleGrants, item => item.ActorId == inviteeId && item.Action == "MembershipRoleGranted.PropertyManager");
+    }
+
+    private static async Task VerifyLeaseActivation(BanesaHubDbContext database, HttpClient owner,
+        HttpClient manager, Guid organizationId, Guid otherOrganizationId, Guid unitId)
+    {
+        var tenant = new BanesaHub.Domain.Tenants.Tenant
+        {
+            Id = Guid.NewGuid(),
+            OrganizationId = organizationId,
+            FullName = "Lease test tenant"
+        };
+        database.Tenants.Add(tenant);
+        await database.SaveChangesAsync();
+        var route = $"/api/v1/organizations/{organizationId}/leases";
+
+        async Task<Guid> CreateDraft(DateOnly start, DateOnly? end)
+        {
+            using var response = await owner.PostAsJsonAsync(route, new
+            {
+                unitId,
+                tenantId = tenant.Id,
+                startDate = start,
+                endDate = end,
+                monthlyRent = 325.50m,
+                deposit = 300m
+            });
+            Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+            var body = await response.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
+            return body.GetProperty("id").GetGuid();
+        }
+
+        var start = new DateOnly(2027, 1, 1);
+        var end = new DateOnly(2027, 1, 31);
+        var first = await CreateDraft(start, end);
+        var version = await database.LeaseVersions.AsNoTracking().SingleAsync(item => item.LeaseId == first);
+        Assert.Equal(1, version.VersionNumber);
+        Assert.Equal(start, version.EffectiveFrom);
+        Assert.Equal(325.50m, version.MonthlyRent);
+        Assert.Equal(300m, version.Deposit);
+
+        using var invalid = await owner.PostAsJsonAsync(route, new
+        {
+            unitId, tenantId = tenant.Id, startDate = end, endDate = start, monthlyRent = 10.001m
+        });
+        Assert.Equal(HttpStatusCode.BadRequest, invalid.StatusCode);
+
+        using var wrongScope = await manager.PostAsync(
+            $"/api/v1/organizations/{otherOrganizationId}/leases/{first}/activate", null);
+        Assert.Equal(HttpStatusCode.NotFound, wrongScope.StatusCode);
+
+        if (!database.Database.IsSqlServer())
+        {
+            return;
+        }
+
+        var rival = await CreateDraft(start, end);
+        var attempts = await Task.WhenAll(
+            owner.PostAsync($"{route}/{first}/activate", null),
+            manager.PostAsync($"{route}/{rival}/activate", null));
+        using var firstResult = attempts[0];
+        using var rivalResult = attempts[1];
+        Assert.Single(attempts, response => response.StatusCode == HttpStatusCode.NoContent);
+        Assert.Single(attempts, response => response.StatusCode == HttpStatusCode.Conflict);
+
+        var winner = firstResult.StatusCode == HttpStatusCode.NoContent ? first : rival;
+        using var retry = await owner.PostAsync($"{route}/{winner}/activate", null);
+        Assert.Equal(HttpStatusCode.NoContent, retry.StatusCode);
+
+        var boundary = await CreateDraft(end, null);
+        using var sameEndDay = await owner.PostAsync($"{route}/{boundary}/activate", null);
+        Assert.Equal(HttpStatusCode.Conflict, sameEndDay.StatusCode);
+
+        var next = await CreateDraft(end.AddDays(1), null);
+        using var nextDay = await owner.PostAsync($"{route}/{next}/activate", null);
+        Assert.Equal(HttpStatusCode.NoContent, nextDay.StatusCode);
+
+        var later = await CreateDraft(end.AddMonths(1), null);
+        using var afterOpenEnded = await owner.PostAsync($"{route}/{later}/activate", null);
+        Assert.Equal(HttpStatusCode.Conflict, afterOpenEnded.StatusCode);
+
+        Assert.Equal(2, await database.Leases.CountAsync(item =>
+            item.OrganizationId == organizationId && item.UnitId == unitId &&
+            item.Status == BanesaHub.Domain.Tenants.LeaseStatus.Active));
     }
 
     private WebApplicationFactory<Program> CreateHost(IPasswordResetDelivery? delivery = null, string? sqlServer = null)

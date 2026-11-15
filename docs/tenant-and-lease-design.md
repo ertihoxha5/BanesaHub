@@ -12,4 +12,8 @@ M04.1 implements tenant contacts and occupancy history for FR-03 and establishes
 
 A lease identifies one unit and one primary tenant within an organization. Its lifecycle state is draft, active, ended or cancelled. Each version keeps a numbered snapshot of the contractual dates, effective date, monthly rent and optional deposit in EUR, with a UTC recording timestamp. Amendments will append versions so prior terms remain available.
 
-The lease activation service will select the applicable terms and check for overlapping active leases in a transaction. Expiration, early termination and recording actual occupancy dates belong to the lifecycle workflow.
+Owners and property managers can create a draft with version 1 using POST /api/v1/organizations/{organizationId}/leases. POST /api/v1/organizations/{organizationId}/leases/{leaseId}/activate checks the latest terms against active leases for the same unit. Both endpoints require the existing session and antiforgery token.
+
+Activation locks the unit first in a SQL Server serializable transaction. The check treats both endpoints of a contract as inclusive and a missing end date as open-ended. An overlap returns HTTP 409. Repeating activation for an already active lease succeeds without writing again. Future operations that change lease dates or active state must acquire the same unit lock before checking or writing lease state.
+
+Lease activation records a contractual state change. Actual occupancy dates, amendments, expiration and early termination are separate lifecycle work.

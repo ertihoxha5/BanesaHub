@@ -293,3 +293,12 @@
 
   git add -- docs/tenant-and-lease-design.md docs/milestones.md docs/development-log.md src/BanesaHub.Domain/Tenants/Lease.cs src/BanesaHub.Domain/Tenants/LeaseVersion.cs src/BanesaHub.Infrastructure/Persistence/BanesaHubDbContext.cs src/BanesaHub.Infrastructure/Persistence/LeaseModelConfiguration.cs src/BanesaHub.Infrastructure/Persistence/Migrations/20261115220754_AddVersionedLeases.cs src/BanesaHub.Infrastructure/Persistence/Migrations/20261115220754_AddVersionedLeases.Designer.cs src/BanesaHub.Infrastructure/Persistence/Migrations/BanesaHubDbContextModelSnapshot.cs
   git commit -m "feat(leases): add versioned lease persistence"
+
+## 2026-11-15 — Draft and lease activation (M04.2b)
+
+- Added authorized API operations to create a lease draft with version 1 and activate it. Activation takes a SQL Server unit lock and checks inclusive dates within a serializable transaction. An overlap returns HTTP 409.
+- Added validation and tests for saved draft terms and organization scope. The opt-in SQL Server workflow also checks concurrent activation, inclusive end dates, open-ended leases, and repeat activation.
+- Restore and build passed with zero warnings and errors. Seven integration tests passed. The opt-in SQL Server case was skipped, so transaction behavior remains unverified against a live database in this session. Diff and scoped secret checks passed.
+
+  git add -- src/BanesaHub.API/Controllers/LeasesController.cs src/BanesaHub.API/Program.cs src/BanesaHub.Application/Tenants/ILeaseLifecycle.cs src/BanesaHub.Infrastructure/Persistence/LeaseLifecycle.cs tests/BanesaHub.IntegrationTests/AuthTests.cs docs/milestones.md docs/tenant-and-lease-design.md docs/development-log.md
+  git commit -m "feat(leases): activate drafts with overlap protection"

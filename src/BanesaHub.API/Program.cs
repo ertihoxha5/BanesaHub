@@ -1,4 +1,5 @@
 using BanesaHub.Application.Properties;
+using BanesaHub.Application.Tenants;
 using BanesaHub.Application.Organizations;
 using BanesaHub.API.Auth;
 using System.Threading.RateLimiting;
@@ -22,6 +23,7 @@ builder.Services.AddScoped<IOrganizationDirectory, OrganizationDirectory>();
 builder.Services.AddScoped<IPropertyInventory, PropertyInventory>();
 builder.Services.AddScoped<IBuildingInventory, BuildingInventory>();
 builder.Services.AddScoped<IUnitInventory, UnitInventory>();
+builder.Services.AddScoped<ILeaseLifecycle, LeaseLifecycle>();
 builder.Services.AddScoped<IOrganizationInvitations, OrganizationInvitations>();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddIdentityCore<IdentityUser<Guid>>(options =>
