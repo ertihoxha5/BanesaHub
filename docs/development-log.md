@@ -268,3 +268,11 @@
 
   git add -- tests/BanesaHub.IntegrationTests/AuthTests.cs docs/milestones.md docs/development-log.md
   git commit -m "test(properties): verify ten-unit inventory workflow"
+
+## 2026-11-15 — SQL Server inventory acceptance (M03.4)
+
+- The owner reported that the focused OrganizationIsolationOnSqlServer test passed with .NET 10.0.404 and a separate artifacts directory. The test applies migrations to a temporary SQL Server database and checks the ten-unit inventory, property draft behavior, occupancy labels and organization isolation.
+- Milestone 4 is complete. The separate development seed verification remains open. Only documentation changed in this checkpoint. The diff check passed.
+
+  git add -- docs/milestones.md docs/development-log.md
+  git commit -m "docs(properties): record SQL Server acceptance"
