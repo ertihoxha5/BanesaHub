@@ -222,6 +222,72 @@ namespace BanesaHub.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("BanesaHub.Domain.Tenants.OccupancyPeriod", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateOnly?>("EndDate")
+                        .HasColumnType("date");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateOnly>("StartDate")
+                        .HasColumnType("date");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("UnitId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrganizationId", "TenantId", "StartDate");
+
+                    b.HasIndex("OrganizationId", "UnitId", "StartDate")
+                        .IsUnique();
+
+                    b.ToTable("OccupancyPeriods", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_OccupancyPeriods_DateOrder", "[EndDate] IS NULL OR [EndDate] >= [StartDate]");
+                        });
+                });
+
+            modelBuilder.Entity("BanesaHub.Domain.Tenants.Tenant", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("FullName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<bool>("IsArchived")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Phone")
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrganizationId", "FullName");
+
+                    b.ToTable("Tenants");
+                });
+
             modelBuilder.Entity("BanesaHub.Infrastructure.Persistence.AuditEvent", b =>
                 {
                     b.Property<Guid>("Id")
@@ -495,6 +561,32 @@ namespace BanesaHub.Infrastructure.Persistence.Migrations
                         .WithMany()
                         .HasForeignKey("OrganizationId", "BuildingId")
                         .HasPrincipalKey("OrganizationId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("BanesaHub.Domain.Tenants.OccupancyPeriod", b =>
+                {
+                    b.HasOne("BanesaHub.Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId", "TenantId")
+                        .HasPrincipalKey("OrganizationId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("BanesaHub.Domain.Properties.Unit", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId", "UnitId")
+                        .HasPrincipalKey("OrganizationId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("BanesaHub.Domain.Tenants.Tenant", b =>
+                {
+                    b.HasOne("BanesaHub.Domain.Organizations.Organization", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });

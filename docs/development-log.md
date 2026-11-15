@@ -276,3 +276,12 @@
 
   git add -- docs/milestones.md docs/development-log.md
   git commit -m "docs(properties): record SQL Server acceptance"
+
+## 2026-11-15 — Tenant and occupancy history model (M04.1)
+
+- Added tenant contacts, occupancy periods, EF mappings and the AddTenantOccupancyHistory migration. The migration enforces same-organization links to units and tenants, valid date order, and unique start dates per unit.
+- Recorded MVP lease assumptions in tenant-and-lease-design.md. The lifecycle checkpoint will handle activation, lease versions and full overlap checks.
+- Restore and build passed with zero warnings and errors. Seven integration tests passed and the opt-in SQL Server test was skipped. EF found no pending model changes, and the generated SQL was reviewed. The migration was not applied to SQL Server in this session.
+
+  git add -- docs/tenant-and-lease-design.md docs/milestones.md docs/development-log.md src/BanesaHub.Domain/Tenants src/BanesaHub.Infrastructure/Persistence/BanesaHubDbContext.cs src/BanesaHub.Infrastructure/Persistence/TenantModelConfiguration.cs src/BanesaHub.Infrastructure/Persistence/Migrations/20261115215940_AddTenantOccupancyHistory.cs src/BanesaHub.Infrastructure/Persistence/Migrations/20261115215940_AddTenantOccupancyHistory.Designer.cs src/BanesaHub.Infrastructure/Persistence/Migrations/BanesaHubDbContextModelSnapshot.cs
+  git commit -m "feat(tenants): add tenant and occupancy history model"
