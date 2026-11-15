@@ -259,3 +259,12 @@
 
   git add -- src/BanesaHub.Web/Controllers/UnitsController.cs src/BanesaHub.Web/Inventory/UnitModels.cs src/BanesaHub.Web/Inventory/InventoryApi.cs src/BanesaHub.Web/Views/Units/Form.cshtml src/BanesaHub.Web/Views/Units/Index.cshtml src/BanesaHub.Web/Views/Buildings/Index.cshtml tests/BanesaHub.IntegrationTests/AuthTests.cs docs/milestones.md docs/development-log.md
   git commit -m "feat(properties): add MVC unit management"
+
+## 2026-11-15 — Inventory acceptance (M03.4)
+
+- Extended the integration workflow to build an inventory of ten uniquely numbered units, reject a duplicate, verify the property draft label and check all three Albanian occupancy labels on their corresponding rows.
+- Verified that a second organization could use the same unit number and that the first organization could neither read nor change that unit. Re-read it as its owner to confirm the denied change did not persist.
+- Restore and build succeeded with zero warnings and errors. Seven integration tests passed. The opt-in SQL Server test was skipped because the local Windows-authenticated SQL connection failed with an SSPI error. Milestone SQL Server acceptance remains open. The scoped secret scan and diff check passed.
+
+  git add -- tests/BanesaHub.IntegrationTests/AuthTests.cs docs/milestones.md docs/development-log.md
+  git commit -m "test(properties): verify ten-unit inventory workflow"

@@ -425,11 +425,57 @@ public sealed class AuthTests(WebApplicationFactory<Program> factory)
         var page = Assert.Single((await unitPage.Content.ReadFromJsonAsync<System.Text.Json.JsonElement[]>())!);
         Assert.Equal("A02", page.GetProperty("number").GetString());
 
+        var expectedNumbers = Enumerable.Range(1, 10).Select(index => $"A{index:D2}").ToArray();
+        foreach (var number in expectedNumbers.Skip(2))
+        {
+            using var added = await client.PostAsJsonAsync(unitsRoute, new { number, status = 2 });
+            Assert.Equal(HttpStatusCode.Created, added.StatusCode);
+        }
+
+        var acceptedUnits = await client.GetFromJsonAsync<System.Text.Json.JsonElement[]>(unitsRoute);
+        Assert.NotNull(acceptedUnits);
+        Assert.Equal(expectedNumbers, acceptedUnits.Select(unit => unit.GetProperty("number").GetString()));
+        Assert.Equal(new[] { 3, 1 }.Concat(Enumerable.Repeat(2, 8)),
+            acceptedUnits.Select(unit => unit.GetProperty("status").GetInt32()));
+        using var duplicateTenth = await client.PostAsJsonAsync(unitsRoute, new { number = "A10" });
+        Assert.Equal(HttpStatusCode.Conflict, duplicateTenth.StatusCode);
+
+        var otherOrganizationProperties = $"/api/v1/organizations/{second.Id}/properties";
+        using var separateProperty = await invitee.PostAsJsonAsync(otherOrganizationProperties, new { name = "Separate inventory" });
+        Assert.Equal(HttpStatusCode.Created, separateProperty.StatusCode);
+        using var separateBuilding = await invitee.PostAsJsonAsync(
+            $"{separateProperty.Headers.Location!.PathAndQuery}/buildings", new { name = "Separate building" });
+        Assert.Equal(HttpStatusCode.Created, separateBuilding.StatusCode);
+        var separateUnits = $"{separateBuilding.Headers.Location!.PathAndQuery}/units";
+        using var separateUnit = await invitee.PostAsJsonAsync(separateUnits, new { number = "A10" });
+        Assert.Equal(HttpStatusCode.Created, separateUnit.StatusCode);
+        var separateUnitRoute = separateUnit.Headers.Location!.PathAndQuery;
+        using var deniedRead = await client.GetAsync(separateUnitRoute);
+        Assert.Equal(HttpStatusCode.NotFound, deniedRead.StatusCode);
+        using var deniedWrite = await client.PutAsJsonAsync(separateUnitRoute, new { number = "Changed outside organization" });
+        Assert.Equal(HttpStatusCode.NotFound, deniedWrite.StatusCode);
+        var untouchedUnit = await invitee.GetFromJsonAsync<System.Text.Json.JsonElement>(separateUnitRoute);
+        Assert.Equal("A10", untouchedUnit.GetProperty("number").GetString());
+
+        var draftHtml = await browser.GetStringAsync($"{pageRoute}?status=Draft&search=Updated");
+        Assert.Contains("Updated property</th>", draftHtml);
+        Assert.Contains(">Draft</span>", draftHtml);
         var webUnits = $"{webBuildings}/{buildingId}/units";
         Assert.Contains($"href=\"{webUnits}\"", await browser.GetStringAsync(webBuildings));
         var unitPageHtml = await browser.GetStringAsync(webUnits);
         Assert.Contains("46,75", unitPageHtml);
-        Assert.Contains("E padisponueshme", unitPageHtml);
+        var decodedUnits = WebUtility.HtmlDecode(unitPageHtml);
+        string RenderedUnitRow(string number) => System.Text.RegularExpressions.Regex.Match(decodedUnits,
+            $"""(?s)<th scope="row">{number}</th>.*?</tr>""").Value;
+
+        foreach (var number in expectedNumbers)
+        {
+            Assert.NotEmpty(RenderedUnitRow(number));
+        }
+
+        Assert.Contains("E padisponueshme", RenderedUnitRow("A01"));
+        Assert.Contains("E lirë", RenderedUnitRow("A02"));
+        Assert.Contains("E zënë", RenderedUnitRow("A10"));
         Assert.DoesNotContain("A02", await browser.GetStringAsync($"{webUnits}?page=2"));
         var newUnit = $"{webUnits}/new";
         Assert.Contains($"action=\"{newUnit}\"", await browser.GetStringAsync(newUnit));
