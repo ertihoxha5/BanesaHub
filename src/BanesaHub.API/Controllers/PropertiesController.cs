@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using BanesaHub.Application.Properties;
+using BanesaHub.Domain.Properties;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -14,14 +15,15 @@ public sealed class PropertiesController(IPropertyInventory inventory) : Control
 {
     [HttpGet]
     public async Task<IActionResult> List(Guid organizationId, CancellationToken ct,
-        [Range(0, int.MaxValue)] int offset = 0, [Range(1, 100)] int limit = 25)
+        [Range(0, int.MaxValue)] int offset = 0, [Range(1, 100)] int limit = 25,
+        [StringLength(200)] string? search = null, PropertyStatus? status = null)
     {
         if (!TryGetActor(out var actorId))
         {
             return Unauthorized();
         }
 
-        var properties = await inventory.ListAsync(organizationId, actorId, offset, limit, ct);
+        var properties = await inventory.ListAsync(organizationId, actorId, offset, limit, ct, search, status);
         return properties is null ? NotFound() : Ok(properties);
     }
 

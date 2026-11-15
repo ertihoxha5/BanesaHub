@@ -12,14 +12,27 @@ public sealed class PropertyInventory(BanesaHubDbContext database) : IPropertyIn
         property => new PropertyDetails(property.Id, property.Name, property.Address, property.Category, property.Status);
 
     public async Task<IReadOnlyList<PropertyDetails>?> ListAsync(
-        Guid organizationId, Guid actorId, int offset, int limit, CancellationToken ct)
+        Guid organizationId, Guid actorId, int offset, int limit, CancellationToken ct, string? search = null, PropertyStatus? status = null)
     {
         if (!await CanManage(database, organizationId, actorId, ct))
         {
             return null;
         }
 
-        return await Visible(organizationId).OrderBy(item => item.Name).ThenBy(item => item.Id)
+        var properties = Visible(organizationId);
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim();
+            properties = properties.Where(item => item.Name.Contains(term) ||
+                (item.Address != null && item.Address.Contains(term)));
+        }
+
+        if (status.HasValue)
+        {
+            properties = properties.Where(item => item.Status == status.Value);
+        }
+
+        return await properties.OrderBy(item => item.Name).ThenBy(item => item.Id)
             .Skip(offset).Take(limit).Select(ToDetails).ToListAsync(ct);
     }
 

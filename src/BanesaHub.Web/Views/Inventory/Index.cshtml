@@ -1,0 +1,118 @@
+@model BanesaHub.Web.Inventory.PropertyList
+@using BanesaHub.Web.Inventory
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+<!doctype html>
+<html lang="sq">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="referrer" content="no-referrer">
+    <title>Pronat | BanesaHub</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <link rel="stylesheet" href="~/css/inventory.css" asp-append-version="true">
+</head>
+<body>
+    <header class="inventory-header">
+        <div class="container inventory-bar">
+            <a class="brand" asp-action="Home">Banesa<span>Hub</span></a>
+            @if (Context.Request.Cookies.ContainsKey(InventoryApi.SessionCookie))
+            {
+                <form method="post" asp-action="SignOutInventory">
+                    <button class="btn btn-sm btn-outline-light" type="submit">Dilni</button>
+                </form>
+            }
+        </div>
+    </header>
+    <main class="container inventory-main">
+        <h1>Pronat</h1>
+
+        @if (Model.Message is not null)
+        {
+            <p class="alert alert-warning" role="alert">@Model.Message</p>
+        }
+
+        @if (Model.OrganizationId == Guid.Empty)
+        {
+            <form method="get" asp-action="Home" class="panel entry">
+                <label class="form-label" for="organizationId">Identifikuesi i organizatës</label>
+                <input class="form-control" id="organizationId" name="organizationId" required maxlength="36">
+                <button class="btn btn-primary mt-3" type="submit">Hapni pronat</button>
+            </form>
+        }
+        else if (Model.SignInRequired)
+        {
+            <form method="post" asp-action="SignIn" asp-route-organizationId="@Model.OrganizationId" class="panel entry">
+                <h2 class="h5 mb-3">Hyni për të parë pronat</h2>
+                <label class="form-label" for="email">Emaili</label>
+                <input class="form-control mb-3" type="email" id="email" name="email" autocomplete="username" required maxlength="256">
+                <label class="form-label" for="password">Fjalëkalimi</label>
+                <input class="form-control" type="password" id="password" name="password" autocomplete="current-password" required maxlength="128">
+                <button class="btn btn-primary mt-3" type="submit">Hyni</button>
+            </form>
+        }
+        else
+        {
+            <form method="get" asp-action="Index" asp-route-organizationId="@Model.OrganizationId" class="panel filter-form">
+                <div>
+                    <label class="form-label" for="search">Emri ose adresa</label>
+                    <input class="form-control" type="search" id="search" name="search" value="@Model.Search" maxlength="200">
+                </div>
+                <div>
+                    <label class="form-label" for="status">Gjendja</label>
+                    <select class="form-select" id="status" name="status">
+                        <option value="">Të gjitha</option>
+                        <option value="Draft" selected="@(Model.Status == PropertyFilter.Draft)">Draft</option>
+                        <option value="Active" selected="@(Model.Status == PropertyFilter.Active)">Aktive</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary" type="submit">Filtro</button>
+            </form>
+
+            @if (Model.Rows is { Count: > 0 } rows)
+            {
+                <div class="panel table-responsive inventory-table">
+                    <table class="table align-middle mb-0">
+                        <caption class="visually-hidden">Lista e pronave</caption>
+                        <thead>
+                            <tr><th scope="col">Prona</th><th scope="col">Adresa</th><th scope="col">Kategoria</th><th scope="col">Gjendja</th></tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var property in rows)
+                        {
+                            <tr>
+                                <th scope="row">@property.Name</th>
+                                <td>@(property.Address ?? "—")</td>
+                                <td>@(property.Category ?? "—")</td>
+                                <td><span class="property-status @(property.Status == PropertyFilter.Active ? "active-status" : "")">@(property.Status == PropertyFilter.Active ? "Aktive" : "Draft")</span></td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else if (Model.Rows is not null)
+            {
+                <p class="panel empty-state">Nuk u gjet asnjë pronë.</p>
+            }
+
+            @if (Model.Rows is not null && (Model.Page > 1 || Model.HasNext))
+            {
+                <nav class="inventory-pagination" aria-label="Faqet e pronave">
+                    @if (Model.Page > 1)
+                    {
+                        <a class="btn btn-outline-secondary" asp-action="Index" asp-route-organizationId="@Model.OrganizationId"
+                           asp-route-page="@(Model.Page - 1)" asp-route-search="@Model.Search" asp-route-status="@Model.Status">Para</a>
+                    }
+                    <span>Faqja @Model.Page</span>
+                    @if (Model.HasNext)
+                    {
+                        <a class="btn btn-outline-secondary" asp-action="Index" asp-route-organizationId="@Model.OrganizationId"
+                           asp-route-page="@(Model.Page + 1)" asp-route-search="@Model.Search" asp-route-status="@Model.Status">Tjetra</a>
+                    }
+                </nav>
+            }
+        }
+    </main>
+</body>
+</html>

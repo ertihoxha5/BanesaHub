@@ -257,6 +257,45 @@ public sealed class AuthTests(WebApplicationFactory<Program> factory)
 
         using var otherProperty = await client.PostAsJsonAsync(inventoryRoute, new { name = "Other property" });
         Assert.Equal(HttpStatusCode.Created, otherProperty.StatusCode);
+        using var webHost = new WebApplicationFactory<BanesaHub.Web.Program>()
+            .WithWebHostBuilder(builder => builder.ConfigureServices(services =>
+            {
+                services.AddSingleton<IDataProtectionProvider, EphemeralDataProtectionProvider>();
+                services.AddHttpClient<BanesaHub.Web.Inventory.InventoryApi>()
+                    .ConfigurePrimaryHttpMessageHandler(() => host.Server.CreateHandler());
+            }));
+        using var browser = webHost.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            BaseAddress = new Uri("https://localhost"),
+            AllowAutoRedirect = false
+        });
+        var pageRoute = $"/organizations/{saved.Id}/properties";
+        using var home = await browser.GetAsync($"/?organizationId={saved.Id}");
+        Assert.Equal(pageRoute, home.Headers.Location?.OriginalString);
+        var signInHtml = await browser.GetStringAsync(pageRoute);
+        Assert.Contains("Hyni për të parë pronat", signInHtml);
+        var token = System.Text.RegularExpressions.Regex.Match(
+            signInHtml, "name=\"__RequestVerificationToken\"[^>]*value=\"([^\"]+)\"").Groups[1].Value;
+        Assert.NotEmpty(token);
+        using var loginForm = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["email"] = credentials.email,
+            ["password"] = credentials.password,
+            ["__RequestVerificationToken"] = token
+        });
+        using var webLogin = await browser.PostAsync($"{pageRoute}/sign-in", loginForm);
+        Assert.Equal(HttpStatusCode.Found, webLogin.StatusCode);
+        var filteredHtml = await browser.GetStringAsync($"{pageRoute}?search=Updated&status=Draft");
+        Assert.Contains("Updated property", filteredHtml);
+        Assert.DoesNotContain("Other property", filteredHtml);
+        var filteredOut = await browser.GetStringAsync($"{pageRoute}?search=Updated&status=Active");
+        Assert.Contains("Nuk u gjet asnjë pronë.", filteredOut);
+        var nextPage = await browser.GetStringAsync($"{pageRoute}?search=Updated&status=Draft&page=2");
+        Assert.DoesNotContain("Updated property", nextPage);
+        Assert.Contains("search=Updated", nextPage);
+        using var foreignPage = await browser.GetAsync($"/organizations/{second.Id}/properties");
+        Assert.Equal(HttpStatusCode.NotFound, foreignPage.StatusCode);
+
         var buildingId = buildingRoute.Split('/')[^1];
         using var mismatchedBuilding = await client.GetAsync($"{otherProperty.Headers.Location!.PathAndQuery}/buildings/{buildingId}");
         Assert.Equal(HttpStatusCode.NotFound, mismatchedBuilding.StatusCode);

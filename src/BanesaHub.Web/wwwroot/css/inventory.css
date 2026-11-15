@@ -1,0 +1,33 @@
+body {
+    background: #f4f6f8;
+    color: #192834;
+    font-family: system-ui, sans-serif;
+}
+
+.inventory-header { background: #142935; color: white; }
+.inventory-bar { display: flex; align-items: center; justify-content: space-between; min-height: 4rem; }
+.brand { color: white; font-weight: 750; font-size: 1.25rem; text-decoration: none; }
+.brand:hover, .brand:focus-visible { color: white; text-decoration: underline; }
+.brand span { color: #8ee0ce; }
+.inventory-main { max-width: 68rem; padding-top: clamp(2rem, 5vw, 4rem); padding-bottom: 3rem; }
+.inventory-main h1 { font-weight: 750; margin-bottom: 1.5rem; }
+.panel { background: white; border: 1px solid #dce3e8; border-radius: .85rem; }
+.entry, .empty-state, .filter-form { padding: 1.25rem; }
+.entry { max-width: 28rem; }
+.filter-form {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(8rem, 1fr) auto;
+    gap: 1rem;
+    align-items: end;
+    margin-bottom: 1.25rem;
+}
+.inventory-table .table { --bs-table-bg: transparent; }
+.inventory-table thead { background: #edf3f5; }
+.inventory-table th, .inventory-table td { padding: .85rem 1rem; overflow-wrap: anywhere; }
+.property-status { background: #eaf0f5; color: #30465a; border-radius: 999px; padding: .25rem .65rem; font-size: .875rem; }
+.active-status { background: #dcf3e8; color: #17543f; }
+.inventory-pagination { display: flex; align-items: center; gap: .75rem; margin-top: 1rem; }
+
+@media (max-width: 575.98px) {
+    .filter-form { grid-template-columns: 1fr; }
+}

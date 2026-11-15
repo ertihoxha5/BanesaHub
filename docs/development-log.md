@@ -223,3 +223,12 @@
 
   git add -- src/BanesaHub.API/Program.cs src/BanesaHub.API/Controllers/UnitsController.cs src/BanesaHub.Application/Properties/IUnitInventory.cs src/BanesaHub.Infrastructure/Persistence/UnitInventory.cs src/BanesaHub.Infrastructure/Persistence/BuildingInventory.cs tests/BanesaHub.IntegrationTests/AuthTests.cs docs/milestones.md docs/development-log.md
   git commit -m "feat(properties): add scoped unit endpoints"
+
+## 2026-11-15 — MVC property list (M03.3a)
+
+- Added the Albanian property list and its organization entry, sign-in, empty and error states. The MVC host uses the existing Identity API over HTTPS. The API applies name/address search and status filters before pagination.
+- Added an integration flow through the MVC and API test hosts covering sign-in, filtered data, paging, and rejection of access to another organization. Restore and build passed with zero warnings and errors. Seven integration tests passed, with the opt-in SQL Server test skipped. Scoped secret and diff checks passed.
+- Updated the local setup guide with browser and organization ID instructions.
+
+  git add -- src/BanesaHub.API/Controllers/PropertiesController.cs src/BanesaHub.Application/Properties/IPropertyInventory.cs src/BanesaHub.Infrastructure/Persistence/PropertyInventory.cs src/BanesaHub.Web/Program.cs src/BanesaHub.Web/Controllers/InventoryController.cs src/BanesaHub.Web/Inventory/InventoryApi.cs src/BanesaHub.Web/Inventory/PropertyList.cs src/BanesaHub.Web/Views/Inventory/Index.cshtml src/BanesaHub.Web/wwwroot/css/inventory.css tests/BanesaHub.IntegrationTests/AuthTests.cs tests/BanesaHub.IntegrationTests/BanesaHub.IntegrationTests.csproj docs/milestones.md docs/setup-guide.md docs/development-log.md
+  git commit -m "feat(properties): add filtered MVC property list"

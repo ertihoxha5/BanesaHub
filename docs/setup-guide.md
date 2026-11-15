@@ -57,7 +57,14 @@ $env:ASPNETCORE_ENVIRONMENT = 'Development'
 dotnet run --project src/BanesaHub.Web --no-launch-profile -- --urls https://localhost:7042
 ```
 
-The MVC host starts on port 7042. Its root currently returns 404 because the UI controllers and views have yet to be implemented. In Visual Studio, open BanesaHub.sln, select BanesaHub.API as the startup project, and set the same Development environment and URL in a local debug profile. Run it with Ctrl+F5. You can run BanesaHub.Web separately with the second command above.
+Open [BanesaHub](https://localhost:7042/), enter the organization ID, and sign in with an owner or property manager account. Use the ID returned when the organization was created. For the sample organizations, look up the IDs in the development database:
+
+```powershell
+sqlcmd -S localhost -E -C -b -d BanesaHub -Q "SELECT Id, Slug FROM dbo.Organizations WHERE Slug IN ('demo-a', 'demo-b')"
+```
+
+The property list matches the search text against names and addresses, offers draft and active filters, and displays up to 20 properties per page. The MVC host sends requests to the API at https://localhost:7041 by default. Set `BanesaHubApi__BaseUrl` on the MVC host to change the HTTPS API address. In Visual Studio, configure both projects as startup projects using the ports above.
+
 
 ## Password reset email
 
